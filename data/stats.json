@@ -1,0 +1,8 @@
+{
+  "admin": {
+    "node.json": {
+      "event loop": 3,
+      "promise": 1
+    }
+  }
+}

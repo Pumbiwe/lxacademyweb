@@ -27,7 +27,166 @@ function TrainContent() {
       .catch(() => setLoading(false));
   }, [file]);
 
-  // ... остальной код компонента без изменений ...
+  useEffect(() => {
+    const input = document.querySelector("input");
+    if (input && !loading) {
+      input.focus();
+    }
+  }, [index, loading]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <div className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+          <div className="text-center w-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] border-t-black dark:border-white/[.145] dark:border-t-white mx-auto mb-4"></div>
+            <p className="text-lg text-zinc-600 dark:text-zinc-400">Загрузка вопросов...</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2">
+              {getFileName(file)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!terms.length && !loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+          <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left w-full">
+            <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+              ✓ Завершено
+            </h1>
+            <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+              Вы ответили на все вопросы по теме "{getFileName(file)}".
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row">
+            <button
+              onClick={() => router.push("/select")}
+              className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            >
+              Выбрать тему
+            </button>
+            <button
+              onClick={() => {
+                setIndex(0);
+                setAnswer("");
+                setResult(null);
+                setTerms(shuffle(terms));
+              }}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            >
+              Начать заново
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const current = terms[index];
+
+  function check() {
+    const score = similarity(
+      answer.trim().toLowerCase(),
+      current.answer.toLowerCase()
+    );
+    setResult(score);
+
+    if (score >= 1) {
+      setTimeout(() => {
+        setIndex(i => i + 1);
+        setAnswer("");
+        setResult(null);
+      }, 400);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      check();
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <div className="w-full">
+          <div className="flex justify-between items-center text-sm mb-6">
+            <div className="text-zinc-600 dark:text-zinc-400">
+              Вопрос {index + 1} из {terms.length}
+            </div>
+            <div className="px-3 py-1 rounded-full border border-solid border-black/[.08] dark:border-white/[.145] text-xs">
+              {getFileName(file)}
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-semibold leading-tight text-black dark:text-zinc-50 mb-6">
+            {current.question}
+          </h1>
+
+          <input
+            className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Введите ответ"
+            autoFocus
+          />
+
+          <button
+            onClick={check}
+            className="w-full py-3 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors mb-6"
+          >
+            Проверить ответ
+          </button>
+
+          {result !== null && (
+            <div className="space-y-3 p-4 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] mb-6">
+              <div className={`font-medium ${result >= 0.85 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                {result >= 0.85 ? "✓ Правильно!" : "Попробуйте ещё раз"}
+              </div>
+              <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                Схожесть: {(result * 100).toFixed(1)}%
+              </div>
+              <div className="text-sm">
+                <span className="text-zinc-600 dark:text-zinc-400">Правильный ответ:</span>{" "}
+                <span className="text-black dark:text-white">{current.answer}</span>
+              </div>
+            </div>
+          )}
+
+          {result !== null && result < 1 && (
+            <button
+              onClick={() => {
+                setIndex(i => i + 1);
+                setAnswer("");
+                setResult(null);
+              }}
+              className="w-full py-3 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors"
+            >
+              Следующий вопрос
+            </button>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function shuffle(arr: any[]) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function getFileName(file: string) {
+  switch(file) {
+    case "termscn": return "Компьютерные сети";
+    case "terms": return "Английский язык";
+    default: return "ОБЖ";
+  }
 }
 
 export default function TrainPage() {
@@ -45,16 +204,4 @@ export default function TrainPage() {
       <TrainContent />
     </Suspense>
   );
-}
-
-function shuffle(arr: any[]) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
-
-function getFileName(file: string) {
-  switch(file) {
-    case "termscn": return "Компьютерные сети";
-    case "terms": return "Английский язык";
-    default: return "ОБЖ";
-  }
 }

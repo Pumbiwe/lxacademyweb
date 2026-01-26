@@ -3,28 +3,39 @@ import { SignJWT } from "jose";
 import users from "@/data/users.json";
 
 export async function POST(req: Request) {
-  const { login, password } = await req.json();
+  try {
+    const { login, password } = await req.json();
 
-  const user = (users as any)[login];
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Invalid login" }), {
-      status: 401,
-    });
+    if (!login || !password) {
+      return Response.json({ error: "Логин и пароль обязательны" }, { status: 400 });
+    }
+
+    const user = (users as any)[login];
+    if (!user) {
+      return Response.json({ error: "Неверный логин" }, { status: 401 });
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return Response.json({ error: "Неверный пароль" }, { status: 401 });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error("JWT_SECRET is not set");
+      return Response.json({ error: "Ошибка конфигурации сервера" }, { status: 500 });
+    }
+
+    const secret = new TextEncoder().encode(jwtSecret);
+
+    const token = await new SignJWT({ login, isAdmin: user.isAdmin })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setExpirationTime("7d")
+      .sign(secret);
+
+    return Response.json({ token }, { status: 200 });
+  } catch (error) {
+    console.error("Login API error:", error);
+    return Response.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
   }
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) {
-    return new Response(JSON.stringify({ error: "Invalid password" }), {
-      status: 401,
-    });
-  }
-
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-
-  const token = await new SignJWT({ login, isAdmin: user.isAdmin })
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setExpirationTime("7d")
-    .sign(secret);
-
-  return new Response(JSON.stringify({ token }), { status: 200 });
 }

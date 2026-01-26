@@ -17,32 +17,51 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ login, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Ошибка входа");
-      setLoading(false);
-      return;
-    }
-
-    localStorage.setItem("token", data.token);
-    
-    // Декодируем токен для проверки isAdmin
     try {
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
-      if (payload.isAdmin) {
-        router.push("/admin");
-      } else {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ login, password }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonError) {
+        setError("Ошибка при обработке ответа сервера");
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.error || "Ошибка входа");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.token) {
+        setError("Токен не получен");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem("token", data.token);
+      
+      // Декодируем токен для проверки isAdmin
+      try {
+        const payload = JSON.parse(atob(data.token.split('.')[1]));
+        if (payload.isAdmin) {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
+      } catch (e) {
         router.push("/");
       }
-    } catch (e) {
-      router.push("/");
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Ошибка соединения. Проверьте подключение к интернету.");
+      setLoading(false);
     }
   }
 

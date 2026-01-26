@@ -4,6 +4,14 @@
 import { useEffect, useState, Suspense } from "react";
 import { similarity } from "@/lib/similarity";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
+
+interface ErrorRecord {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  similarity: number;
+}
 
 function TrainContent() {
   const router = useRouter();
@@ -12,6 +20,8 @@ function TrainContent() {
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<ErrorRecord[]>([]);
+  const [skipped, setSkipped] = useState(0);
   
   const searchParams = useSearchParams();
   const file = searchParams.get("file") || "termsobj";
@@ -40,7 +50,7 @@ function TrainContent() {
 
   // Проверяем, закончились ли вопросы ДО попытки обратиться к current
   if (terms.length === 0) {
-    return <CompletionScreen file={file} router={router} />;
+    return <CompletionScreen file={file} router={router} errors={errors} skipped={skipped} />;
   }
 
   // Проверяем, существует ли текущий вопрос
@@ -48,7 +58,7 @@ function TrainContent() {
   
   if (!current) {
     // Если индекса нет, значит вопросы закончились
-    return <CompletionScreen file={file} router={router} />;
+    return <CompletionScreen file={file} router={router} errors={errors} skipped={skipped} />;
   }
 
   function check() {
@@ -57,6 +67,16 @@ function TrainContent() {
       current.answer.toLowerCase()
     );
     setResult(score);
+
+    if (score < 0.85) {
+      // Записываем ошибку
+      setErrors(prev => [...prev, {
+        question: current.question,
+        userAnswer: answer.trim(),
+        correctAnswer: current.answer,
+        similarity: score,
+      }]);
+    }
 
     if (score >= 1) {
       setTimeout(() => {
@@ -74,6 +94,7 @@ function TrainContent() {
   }
 
   function handleSkip() {
+    setSkipped(prev => prev + 1);
     setIndex(i => i + 1);
     setAnswer("");
     setResult(null);
@@ -83,12 +104,27 @@ function TrainContent() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
         <div className="w-full">
-          <div className="flex justify-between items-center text-sm mb-6">
-            <div className="text-zinc-600 dark:text-zinc-400">
-              Вопрос {index + 1} из {terms.length}
-            </div>
-            <div className="px-3 py-1 rounded-full border border-solid border-black/[.08] dark:border-white/[.145] text-xs">
-              {getFileName(file)}
+          <div className="flex justify-between items-center mb-6">
+            <button
+              onClick={() => router.push("/")}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <Image
+                className="dark:invert"
+                src="/next.svg"
+                alt="Logo"
+                width={80}
+                height={16}
+                priority
+              />
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                Вопрос {index + 1} из {terms.length}
+              </div>
+              <div className="px-3 py-1 rounded-full border border-solid border-black/[.08] dark:border-white/[.145] text-xs">
+                {getFileName(file)}
+              </div>
             </div>
           </div>
 
@@ -136,18 +172,6 @@ function TrainContent() {
             </div>
           )}
 
-          {result !== null && result < 1 && (
-            <button
-              onClick={() => {
-                setIndex(i => i + 1);
-                setAnswer("");
-                setResult(null);
-              }}
-              className="w-full py-3 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors"
-            >
-              Следующий вопрос
-            </button>
-          )}
         </div>
       </main>
     </div>
@@ -171,36 +195,102 @@ function LoadingScreen({ file }: { file: string }) {
   );
 }
 
-function CompletionScreen({ file, router }: { file: string; router: any }) {
-  const [shuffledTerms, setShuffledTerms] = useState<any[]>([]);
+function CompletionScreen({ file, router, errors, skipped }: { file: string; router: any; errors: ErrorRecord[]; skipped: number }) {
+  const [showErrors, setShowErrors] = useState(false);
 
   const handleRestart = () => {
-    // Нужно получить вопросы заново и перемешать
-    fetch(`/api/terms?file=${file}`)
-      .then(r => r.json())
-      .then(data => {
-        window.location.reload(); // Простой способ перезапустить
-      });
+    window.location.reload();
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left w-full">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            ✓ Тренировка завершена
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Вы ответили на все вопросы по теме "{getFileName(file)}".
-          </p>
+        <div className="w-full">
+          <div className="mb-6">
+            <button
+              onClick={() => router.push("/")}
+              className="hover:opacity-80 transition-opacity mb-6"
+            >
+              <Image
+                className="dark:invert"
+                src="/next.svg"
+                alt="Logo"
+                width={80}
+                height={16}
+                priority
+              />
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left w-full mb-8">
+            <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+              ✓ Тренировка завершена
+            </h1>
+            <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+              Вы ответили на все вопросы по теме "{getFileName(file)}".
+            </p>
+          </div>
+
+          {/* Статистика */}
+          <div className="w-full space-y-4 mb-8">
+            <div className="p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145]">
+              <h2 className="text-xl font-semibold mb-4 text-black dark:text-zinc-50">Статистика</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-600 dark:text-zinc-400">Ошибок допущено:</span>
+                  <span className="text-lg font-medium text-black dark:text-zinc-50">{errors.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-600 dark:text-zinc-400">Пропущено вопросов:</span>
+                  <span className="text-lg font-medium text-black dark:text-zinc-50">{skipped}</span>
+                </div>
+              </div>
+            </div>
+
+            {errors.length > 0 && (
+              <div className="p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145]">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Ошибки</h2>
+                  <button
+                    onClick={() => setShowErrors(!showErrors)}
+                    className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                  >
+                    {showErrors ? "Скрыть" : "Показать"}
+                  </button>
+                </div>
+                {showErrors && (
+                  <div className="space-y-4 mt-4">
+                    {errors.map((error, idx) => (
+                      <div key={idx} className="p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30">
+                        <div className="font-medium text-sm text-red-900 dark:text-red-300 mb-2">{error.question}</div>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <span className="text-zinc-600 dark:text-zinc-400">Ваш ответ: </span>
+                            <span className="text-red-700 dark:text-red-400">{error.userAnswer || "(пусто)"}</span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-600 dark:text-zinc-400">Правильный ответ: </span>
+                            <span className="text-green-700 dark:text-green-400">{error.correctAnswer}</span>
+                          </div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">
+                            Схожесть: {(error.similarity * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row">
           <button
-            onClick={() => router.push("/select")}
+            onClick={() => router.push("/")}
             className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
           >
-            Выбрать другую тему
+            На главную
           </button>
           <button
             onClick={handleRestart}

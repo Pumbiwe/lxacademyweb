@@ -1,28 +1,16 @@
 // app/api/terms/route.ts
-import terms from "@/data/terms.json";
-import termsobj from "@/data/termsobj.json";
-import termscn from "@/data/termscn.json";
+import subjects from "@/data/subjects.json";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const file = searchParams.get("file") || "terms"; // по умолчанию terms.json
+  const file = searchParams.get("file") || "terms";
 
-  let data: any;
-
-  switch (file) {
-    case "termsobj":
-      data = termsobj;
-      break;
-    case "termscn":
-      data = termscn;
-      break;
-    case "terms":
-    default:
-      data = terms;
-      break;
+  const subject = (subjects as any)[file];
+  if (!subject) {
+    return Response.json({ error: "Subject not found" }, { status: 404 });
   }
 
-  const entries = Object.entries(data).map(([q, a]: [string, any]) => ({
+  const entries = Object.entries(subject.questions).map(([q, a]: [string, any]) => ({
     question: q,
     answer: a.text,
   }));

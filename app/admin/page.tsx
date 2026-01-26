@@ -111,7 +111,10 @@ export default function AdminPage() {
           }),
         });
 
-        if (!res.ok) throw new Error("Failed to update");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Failed to update");
+        }
       } else {
         // Add new question
         const res = await fetch("/api/subjects", {
@@ -124,7 +127,10 @@ export default function AdminPage() {
           }),
         });
 
-        if (!res.ok) throw new Error("Failed to add");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Failed to add");
+        }
       }
 
       setNewQuestion("");
@@ -132,9 +138,9 @@ export default function AdminPage() {
       setEditingQuestion(null);
       setShowAddForm(false);
       loadQuestions(selectedSubject);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save", error);
-      alert("Ошибка при сохранении");
+      alert(error.message || "Ошибка при сохранении");
     } finally {
       setLoading(false);
     }
@@ -147,12 +153,15 @@ export default function AdminPage() {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete");
+      }
 
       loadQuestions(selectedSubject);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete", error);
-      alert("Ошибка при удалении");
+      alert(error.message || "Ошибка при удалении");
     } finally {
       setLoading(false);
     }
@@ -214,7 +223,10 @@ export default function AdminPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to import");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to import");
+      }
 
       await loadSubjects();
       if (data.id) {
@@ -222,9 +234,9 @@ export default function AdminPage() {
         loadQuestions(data.id);
       }
       alert("Предмет успешно импортирован");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to import", error);
-      alert("Ошибка при импорте");
+      alert(error.message || "Ошибка при импорте");
     }
   };
 
@@ -277,7 +289,10 @@ export default function AdminPage() {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete");
+      }
 
       await loadSubjects();
       if (subjects.length > 1) {
@@ -293,9 +308,9 @@ export default function AdminPage() {
         setSelectedSubject("");
         setQuestions([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete subject", error);
-      alert("Ошибка при удалении предмета");
+      alert(error.message || "Ошибка при удалении предмета");
     } finally {
       setLoading(false);
     }

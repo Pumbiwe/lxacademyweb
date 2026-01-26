@@ -1,17 +1,5 @@
 // app/api/subjects/manage/route.ts
-import fs from "fs";
-import path from "path";
-
-function getSubjectsData() {
-  const filePath = path.join(process.cwd(), "data", "subjects.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
-
-function saveSubjectsData(data: any) {
-  const filePath = path.join(process.cwd(), "data", "subjects.json");
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
-}
+import { getSubjectsData, saveSubjectsData } from "@/lib/db";
 
 // Создать новый предмет
 export async function POST(request: Request) {
@@ -22,7 +10,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     
     if (subjectsData[id]) {
       return Response.json({ error: "Subject with this ID already exists" }, { status: 400 });
@@ -34,12 +22,7 @@ export async function POST(request: Request) {
       questions: {},
     };
 
-    try {
-      saveSubjectsData(subjectsData);
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {
@@ -58,7 +41,7 @@ export async function DELETE(request: Request) {
       return Response.json({ error: "Missing subjectId" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
@@ -66,12 +49,7 @@ export async function DELETE(request: Request) {
 
     delete subjectsData[subjectId];
 
-    try {
-      saveSubjectsData(subjectsData);
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {
@@ -90,7 +68,7 @@ export async function GET(request: Request) {
       return Response.json({ error: "Missing subjectId" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
@@ -119,7 +97,7 @@ export async function PUT(request: Request) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     
     subjectsData[subjectId] = {
       name,
@@ -127,12 +105,7 @@ export async function PUT(request: Request) {
       questions: questions || {},
     };
 
-    try {
-      saveSubjectsData(subjectsData);
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {

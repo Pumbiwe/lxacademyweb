@@ -1,23 +1,21 @@
 // app/api/subjects/route.ts
-import fs from "fs";
-import path from "path";
-
-function getSubjectsData() {
-  const filePath = path.join(process.cwd(), "data", "subjects.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
+import { getSubjectsData, saveSubjectsData } from "@/lib/db";
 
 export async function GET() {
-  const subjects = getSubjectsData();
-  const subjectsList = Object.entries(subjects).map(([id, subject]: [string, any]) => ({
-    id,
-    name: subject.name,
-    description: subject.description,
-    questionCount: Object.keys(subject.questions).length,
-  }));
+  try {
+    const subjects = await getSubjectsData();
+    const subjectsList = Object.entries(subjects).map(([id, subject]: [string, any]) => ({
+      id,
+      name: subject.name,
+      description: subject.description,
+      questionCount: Object.keys(subject.questions).length,
+    }));
 
-  return Response.json(subjectsList);
+    return Response.json(subjectsList);
+  } catch (error: any) {
+    console.error("Failed to get subjects:", error);
+    return Response.json({ error: error.message || "Failed to get subjects" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -28,20 +26,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
     subjectsData[subjectId].questions[question] = { text: answer };
 
-    const filePath = path.join(process.cwd(), "data", "subjects.json");
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {
@@ -58,7 +50,7 @@ export async function PUT(request: Request) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
@@ -68,13 +60,7 @@ export async function PUT(request: Request) {
     }
     subjectsData[subjectId].questions[newQuestion] = { text: newAnswer };
 
-    const filePath = path.join(process.cwd(), "data", "subjects.json");
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {
@@ -93,7 +79,7 @@ export async function DELETE(request: Request) {
       return Response.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    const subjectsData = getSubjectsData();
+    const subjectsData = await getSubjectsData();
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
@@ -104,13 +90,7 @@ export async function DELETE(request: Request) {
 
     delete subjectsData[subjectId].questions[question];
 
-    const filePath = path.join(process.cwd(), "data", "subjects.json");
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
-    } catch (writeError: any) {
-      console.error("Failed to write file:", writeError);
-      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
-    }
+    await saveSubjectsData(subjectsData);
 
     return Response.json({ success: true });
   } catch (error: any) {

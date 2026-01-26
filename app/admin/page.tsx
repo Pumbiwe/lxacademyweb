@@ -141,8 +141,6 @@ export default function AdminPage() {
   };
 
   const handleDelete = async (question: string) => {
-    if (!confirm("Вы уверены, что хотите удалить этот вопрос?")) return;
-
     setLoading(true);
     try {
       const res = await fetch(`/api/subjects?subjectId=${selectedSubject}&question=${encodeURIComponent(question)}`, {

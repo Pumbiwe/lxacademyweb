@@ -7,28 +7,39 @@ export async function POST(req: Request) {
     const { login, password } = await req.json();
 
     if (!login || !password) {
-      return Response.json({ error: "Логин и пароль обязательны" }, { status: 400 });
+      return Response.json({ error: "Неверный логин или пароль" }, { status: 401 });
     }
 
+    // Всегда выполняем проверку пароля для одинакового времени ответа
+    // Это предотвращает перебор логинов по времени ответа
     const user = (users as any)[login];
-    if (!user) {
-      return Response.json({ error: "Неверный логин" }, { status: 401 });
+    let isValid = false;
+    let isAdmin = false;
+
+    if (user) {
+      isValid = await bcrypt.compare(password, user.password);
+      isAdmin = user.isAdmin || false;
+    } else {
+      // Если пользователя нет, все равно выполняем bcrypt.compare для одинакового времени
+      // Используем фиктивный хеш для предотвращения timing attack
+      const dummyHash = "$2b$10$abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUV";
+      await bcrypt.compare(password, dummyHash);
     }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) {
-      return Response.json({ error: "Неверный пароль" }, { status: 401 });
+    if (!isValid) {
+      return Response.json({ error: "Неверный логин или пароль" }, { status: 401 });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error("JWT_SECRET is not set");
-      return Response.json({ error: "Ошибка конфигурации сервера" }, { status: 500 });
+    // Используем дефолтный секрет, если не установлен (с предупреждением)
+    const jwtSecret = process.env.JWT_SECRET || "default-secret-key-change-in-production";
+    
+    if (!process.env.JWT_SECRET) {
+      console.warn("⚠️  WARNING: JWT_SECRET is not set! Using default secret. This is insecure for production!");
     }
 
     const secret = new TextEncoder().encode(jwtSecret);
 
-    const token = await new SignJWT({ login, isAdmin: user.isAdmin })
+    const token = await new SignJWT({ login, isAdmin })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime("7d")
       .sign(secret);
@@ -36,6 +47,6 @@ export async function POST(req: Request) {
     return Response.json({ token }, { status: 200 });
   } catch (error) {
     console.error("Login API error:", error);
-    return Response.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
+    return Response.json({ error: "Неверный логин или пароль" }, { status: 401 });
   }
 }

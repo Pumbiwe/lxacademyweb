@@ -313,10 +313,10 @@ export default function AdminPage() {
     <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
       {/* Header */}
       <div className="border-b border-black/[.08] dark:border-white/[.08] bg-white dark:bg-black">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <button
             onClick={() => router.push("/")}
-            className="hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity shrink-0"
           >
             <Image
               className="dark:invert"
@@ -328,16 +328,16 @@ export default function AdminPage() {
             />
           </button>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => router.push("/")}
-              className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white"
+              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
             >
               На главную
             </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white"
+              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
             >
               Выйти
             </button>
@@ -345,25 +345,25 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-semibold text-black dark:text-zinc-50 mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-semibold text-black dark:text-zinc-50 mb-2">
             Админ-панель
           </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">
+          <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400">
             Управление вопросами и ответами
           </p>
         </div>
 
         {/* Subject Management */}
-        <div className="mb-8 p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
             <label className="block text-sm font-medium text-black dark:text-zinc-50">
               Управление предметами
             </label>
-            <div className="flex gap-3">
-              <label className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white cursor-pointer">
+            <div className="flex gap-2 sm:gap-3">
+              <label className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white cursor-pointer whitespace-nowrap">
                 Импорт
                 <input
                   type="file"
@@ -374,7 +374,7 @@ export default function AdminPage() {
               </label>
               <button
                 onClick={() => setShowAddSubjectForm(!showAddSubjectForm)}
-                className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-sm"
+                className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-xs sm:text-sm whitespace-nowrap"
               >
                 + Новый предмет
               </button>
@@ -446,11 +446,11 @@ export default function AdminPage() {
           )}
 
           {/* Subject Selector */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {subjects.map((subject) => (
               <div
                 key={subject.id}
-                className={`group relative px-4 py-2 rounded-xl border border-solid transition-colors text-sm ${
+                className={`group relative px-3 sm:px-4 py-2 rounded-xl border border-solid transition-colors text-xs sm:text-sm ${
                   selectedSubject === subject.id
                     ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                     : "border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
@@ -458,9 +458,9 @@ export default function AdminPage() {
               >
                 <button
                   onClick={() => handleSubjectChange(subject.id)}
-                  className="pr-8"
+                  className="pr-6 sm:pr-8"
                 >
-                  {subject.name} ({subject.questionCount})
+                  <span className="whitespace-nowrap">{subject.name}</span> <span className="opacity-70">({subject.questionCount})</span>
                 </button>
                 <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
@@ -497,8 +497,8 @@ export default function AdminPage() {
           <>
             {/* Add/Edit Form */}
             {(showAddForm || editingQuestion) && (
-              <div className="mb-8 p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
-                <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">
+              <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
+                <h2 className="text-lg sm:text-xl font-semibold text-black dark:text-zinc-50 mb-4">
                   {editingQuestion ? "Редактировать вопрос" : "Добавить вопрос"}
                 </h2>
                 <div className="space-y-4">
@@ -548,7 +548,7 @@ export default function AdminPage() {
 
             {/* Add Button */}
             {!showAddForm && !editingQuestion && (
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => {
                     setShowAddForm(true);
@@ -556,7 +556,7 @@ export default function AdminPage() {
                     setNewQuestion("");
                     setNewAnswer("");
                   }}
-                  className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors"
+                  className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-sm sm:text-base"
                 >
                   + Добавить вопрос
                 </button>
@@ -564,44 +564,44 @@ export default function AdminPage() {
             )}
 
             {/* Questions List */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {questions.length === 0 ? (
-                <div className="p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black text-center text-zinc-600 dark:text-zinc-400">
+                <div className="p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black text-center text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
                   Нет вопросов. Добавьте первый вопрос.
                 </div>
               ) : (
                 questions.map((q, idx) => (
                   <div
                     key={idx}
-                    className="p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black hover:border-black/[.16] dark:hover:border-white/[.24] transition-colors"
+                    className="p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black hover:border-black/[.16] dark:hover:border-white/[.24] transition-colors"
                   >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="font-medium text-black dark:text-zinc-50 mb-2">
-                        {q.question}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm sm:text-base text-black dark:text-zinc-50 mb-2 break-words">
+                          {q.question}
+                        </div>
+                        <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 break-words">
+                          {q.answer}
+                        </div>
                       </div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                        {q.answer}
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => handleEdit(q)}
+                          disabled={loading}
+                          className="px-2 sm:px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white disabled:opacity-50 whitespace-nowrap"
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          onClick={() => handleDelete(q.question)}
+                          disabled={loading}
+                          className="px-2 sm:px-3 py-1.5 rounded-lg border border-solid border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-xs sm:text-sm text-red-600 dark:text-red-400 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          Удалить
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => handleEdit(q)}
-                        disabled={loading}
-                        className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white disabled:opacity-50"
-                      >
-                        Изменить
-                      </button>
-                      <button
-                        onClick={() => handleDelete(q.question)}
-                        disabled={loading}
-                        className="px-3 py-1.5 rounded-lg border border-solid border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-sm text-red-600 dark:text-red-400 disabled:opacity-50"
-                      >
-                        Удалить
-                      </button>
                     </div>
                   </div>
-                </div>
                 ))
               )}
             </div>

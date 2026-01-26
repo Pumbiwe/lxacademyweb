@@ -36,17 +36,27 @@ export async function POST(request: Request) {
     subjectsData[subjectId].questions[question] = { text: answer };
 
     const filePath = path.join(process.cwd(), "data", "subjects.json");
-    fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to add question" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to add question:", error);
+    return Response.json({ error: error.message || "Failed to add question" }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const { subjectId, oldQuestion, newQuestion, newAnswer } = await request.json();
+
+    if (!subjectId || !oldQuestion || !newQuestion || !newAnswer) {
+      return Response.json({ error: "Missing required fields" }, { status: 400 });
+    }
 
     const subjectsData = getSubjectsData();
     if (!subjectsData[subjectId]) {
@@ -59,11 +69,17 @@ export async function PUT(request: Request) {
     subjectsData[subjectId].questions[newQuestion] = { text: newAnswer };
 
     const filePath = path.join(process.cwd(), "data", "subjects.json");
-    fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to update question" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to update question:", error);
+    return Response.json({ error: error.message || "Failed to update question" }, { status: 500 });
   }
 }
 
@@ -82,13 +98,23 @@ export async function DELETE(request: Request) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
+    if (!subjectsData[subjectId].questions[question]) {
+      return Response.json({ error: "Question not found" }, { status: 404 });
+    }
+
     delete subjectsData[subjectId].questions[question];
 
     const filePath = path.join(process.cwd(), "data", "subjects.json");
-    fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(subjectsData, null, 2), "utf-8");
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to delete question" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to delete question:", error);
+    return Response.json({ error: error.message || "Failed to delete question" }, { status: 500 });
   }
 }

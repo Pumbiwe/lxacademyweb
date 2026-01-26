@@ -34,11 +34,17 @@ export async function POST(request: Request) {
       questions: {},
     };
 
-    saveSubjectsData(subjectsData);
+    try {
+      saveSubjectsData(subjectsData);
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to create subject" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to create subject:", error);
+    return Response.json({ error: error.message || "Failed to create subject" }, { status: 500 });
   }
 }
 
@@ -60,11 +66,17 @@ export async function DELETE(request: Request) {
 
     delete subjectsData[subjectId];
 
-    saveSubjectsData(subjectsData);
+    try {
+      saveSubjectsData(subjectsData);
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to delete subject" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to delete subject:", error);
+    return Response.json({ error: error.message || "Failed to delete subject" }, { status: 500 });
   }
 }
 
@@ -115,10 +127,16 @@ export async function PUT(request: Request) {
       questions: questions || {},
     };
 
-    saveSubjectsData(subjectsData);
+    try {
+      saveSubjectsData(subjectsData);
+    } catch (writeError: any) {
+      console.error("Failed to write file:", writeError);
+      return Response.json({ error: `Failed to save: ${writeError.message}` }, { status: 500 });
+    }
 
     return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ error: "Failed to import subject" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Failed to import subject:", error);
+    return Response.json({ error: error.message || "Failed to import subject" }, { status: 500 });
   }
 }

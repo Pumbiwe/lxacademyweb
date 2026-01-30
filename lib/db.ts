@@ -5,14 +5,37 @@ import path from "path";
 
 const SUBJECTS_KEY = "subjects";
 
-// Проверяем, доступен ли Redis (Upstash или Vercel KV)
+// Проверяем, доступен ли Redis (Vercel Storage KV / Upstash)
 function isRedisAvailable(): boolean {
-  // Upstash / Vercel Redis
+  // Vercel Storage KV (подключённый Redis в проекте)
+  if (process.env.STORAGE_KV_REST_API_URL && (process.env.STORAGE_KV_REST_API_TOKEN || process.env.STORAGE_KV_READ_ONLY_TOKEN))
+    return true;
+  // Upstash
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
     return true;
-  // Старый Vercel KV (мигрирован в Upstash)
+  // Старый Vercel KV
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) return true;
   return false;
+}
+
+// Токен для записи (read-only не подходит для сохранения)
+function getRedisToken(): string {
+  return (
+    process.env.STORAGE_KV_REST_API_TOKEN ||
+    process.env.STORAGE_KV_READ_ONLY_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    ""
+  );
+}
+
+function getRedisUrl(): string {
+  return (
+    process.env.STORAGE_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    ""
+  );
 }
 
 // Кэшируемый клиент Redis
@@ -20,13 +43,11 @@ let redisClient: Redis | null = null;
 
 function getRedisClient(): Redis | null {
   if (!isRedisAvailable()) return null;
+  const url = getRedisUrl();
+  const token = getRedisToken();
+  if (!url || !token) return null;
   if (!redisClient) {
-    redisClient = new Redis({
-      url:
-        process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || "",
-      token:
-        process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || "",
-    });
+    redisClient = new Redis({ url, token });
   }
   return redisClient;
 }

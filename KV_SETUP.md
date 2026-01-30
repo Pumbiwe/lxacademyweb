@@ -13,13 +13,10 @@
    - Свяжите с проектом и создайте/выберите базу Redis
 
 2. **Переменные окружения:**
-   После интеграции автоматически добавятся:
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
-
-   Либо для старого Vercel KV:
-   - `KV_REST_API_URL`
-   - `KV_REST_API_TOKEN`
+   Поддерживаются (в порядке приоритета):
+   - **Vercel Storage KV:** `STORAGE_KV_REST_API_URL`, `STORAGE_KV_REST_API_TOKEN` (для записи; `STORAGE_KV_READ_ONLY_TOKEN` только для чтения)
+   - **Upstash:** `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+   - **Старый Vercel KV:** `KV_REST_API_URL`, `KV_REST_API_TOKEN`
 
 3. **Подтяните переменные локально:**
    ```bash

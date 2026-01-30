@@ -18,6 +18,9 @@ export async function GET() {
   }
 }
 
+const MAX_QUESTION_LENGTH = 2000;
+const MAX_ANSWER_LENGTH = 5000;
+
 export async function POST(request: Request) {
   try {
     const { subjectId, question, answer } = await request.json();
@@ -25,13 +28,18 @@ export async function POST(request: Request) {
     if (!subjectId || !question || !answer) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
+    const q = typeof question === "string" ? question.slice(0, MAX_QUESTION_LENGTH).trim() : "";
+    const a = typeof answer === "string" ? answer.slice(0, MAX_ANSWER_LENGTH).trim() : "";
+    if (!q || !a) {
+      return Response.json({ error: "Invalid question or answer" }, { status: 400 });
+    }
 
     const subjectsData = await getSubjectsData();
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
-    subjectsData[subjectId].questions[question] = { text: answer };
+    subjectsData[subjectId].questions[q] = { text: a };
 
     await saveSubjectsData(subjectsData);
 
@@ -49,16 +57,21 @@ export async function PUT(request: Request) {
     if (!subjectId || !oldQuestion || !newQuestion || !newAnswer) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
+    const newQ = typeof newQuestion === "string" ? newQuestion.slice(0, MAX_QUESTION_LENGTH).trim() : "";
+    const newA = typeof newAnswer === "string" ? newAnswer.slice(0, MAX_ANSWER_LENGTH).trim() : "";
+    if (!newQ || !newA) {
+      return Response.json({ error: "Invalid question or answer" }, { status: 400 });
+    }
 
     const subjectsData = await getSubjectsData();
     if (!subjectsData[subjectId]) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
-    if (oldQuestion !== newQuestion) {
+    if (oldQuestion !== newQ) {
       delete subjectsData[subjectId].questions[oldQuestion];
     }
-    subjectsData[subjectId].questions[newQuestion] = { text: newAnswer };
+    subjectsData[subjectId].questions[newQ] = { text: newA };
 
     await saveSubjectsData(subjectsData);
 

@@ -25,9 +25,26 @@ function TrainContent() {
   
   const searchParams = useSearchParams();
   const file = searchParams.get("file") || "termsobj";
+  const modeErrors = searchParams.get("mode") === "errors";
+  const errorsKey = `train_errors_${file}`;
 
   useEffect(() => {
     setLoading(true);
+    if (modeErrors) {
+      try {
+        const raw = typeof window !== "undefined" ? sessionStorage.getItem(errorsKey) : null;
+        const parsed = raw ? JSON.parse(raw) : null;
+        const list = Array.isArray(parsed) ? parsed : [];
+        const termsFromErrors = list
+          .filter((x: any) => x && typeof x.question === "string" && typeof x.answer === "string")
+          .map((x: any) => ({ question: x.question, answer: x.answer }));
+        setTerms(termsFromErrors.length > 0 ? shuffle(termsFromErrors) : []);
+      } catch {
+        setTerms([]);
+      }
+      setLoading(false);
+      return;
+    }
     fetch(`/api/terms?file=${file}`)
       .then(r => r.json())
       .then(data => {
@@ -35,7 +52,7 @@ function TrainContent() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [file]);
+  }, [file, modeErrors, errorsKey]);
 
   useEffect(() => {
     const input = document.querySelector("input");
@@ -46,6 +63,31 @@ function TrainContent() {
 
   if (loading) {
     return <LoadingScreen file={file} />;
+  }
+
+  // Режим "только ошибки": если нет сохранённых ошибок — показываем экран "нет ошибок"
+  if (modeErrors && terms.length === 0 && !loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black sm:items-start">
+          <div className="w-full text-center sm:text-left">
+            <button onClick={() => router.push("/")} className="hover:opacity-80 transition-opacity mb-6">
+              <Image className="dark:invert" src="/next.svg" alt="Logo" width={80} height={16} priority />
+            </button>
+            <h1 className="text-2xl font-semibold text-black dark:text-zinc-50 mb-2">Нет сохранённых ошибок</h1>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+              Пройдите тренировку по теме и ответьте с ошибками — затем можно будет потренироваться только по ним.
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] px-5 py-3 hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]"
+            >
+              На главную
+            </button>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // Проверяем, закончились ли вопросы ДО попытки обратиться к current
@@ -198,8 +240,20 @@ function LoadingScreen({ file }: { file: string }) {
 function CompletionScreen({ file, router, errors, skipped }: { file: string; router: any; errors: ErrorRecord[]; skipped: number }) {
   const [showErrors, setShowErrors] = useState(false);
 
+  useEffect(() => {
+    if (errors.length === 0 || typeof window === "undefined") return;
+    try {
+      const errorsForRetry = errors.map((e) => ({ question: e.question, answer: e.correctAnswer }));
+      sessionStorage.setItem(`train_errors_${file}`, JSON.stringify(errorsForRetry));
+    } catch (_) {}
+  }, [file, errors]);
+
   const handleRestart = () => {
     window.location.reload();
+  };
+
+  const handleTrainErrors = () => {
+    router.push(`/train?file=${encodeURIComponent(file)}&mode=errors`);
   };
 
   return (
@@ -285,16 +339,24 @@ function CompletionScreen({ file, router, errors, skipped }: { file: string; rou
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row">
+        <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row flex-wrap">
           <button
             onClick={() => router.push("/")}
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] sm:w-auto sm:min-w-[140px]"
           >
             На главную
           </button>
+          {errors.length > 0 && (
+            <button
+              onClick={handleTrainErrors}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-amber-600 text-white px-5 transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 sm:w-auto sm:min-w-[200px]"
+            >
+              Тренироваться по ошибкам
+            </button>
+          )}
           <button
             onClick={handleRestart}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] sm:w-auto sm:min-w-[140px]"
           >
             Начать заново
           </button>

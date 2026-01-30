@@ -117,7 +117,9 @@ export default function Home() {
               <div className="flex items-center justify-between w-full p-6">
                 <div className="flex flex-col justify-center flex-1">
                   <div className="font-medium text-lg mb-1">{subject.name}</div>
-                  <div className="text-base opacity-60">{subject.description}</div>
+                  <div className="text-base opacity-60">
+                    {subject.questionCount} вопросов
+                  </div>
                 </div>
                 <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ml-4 shrink-0 ${
                   selectedFile === subject.id 

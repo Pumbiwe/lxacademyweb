@@ -17,9 +17,17 @@ interface Question {
   answer: string;
 }
 
+type AdminTab = "subjects" | "users" | "analytics";
+
+interface UserItem {
+  login: string;
+  isAdmin: boolean;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<AdminTab>("subjects");
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -32,6 +40,21 @@ export default function AdminPage() {
   const [newSubjectId, setNewSubjectId] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectDescription, setNewSubjectDescription] = useState("");
+  // Пользователи
+  const [users, setUsers] = useState<UserItem[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [newUserLogin, setNewUserLogin] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
+  const [userError, setUserError] = useState("");
+  // Аналитика
+  const [stats, setStats] = useState<Record<string, Record<string, Record<string, number>>>>({});
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -54,6 +77,86 @@ export default function AdminPage() {
       router.replace("/");
     }
   }, [router]);
+
+  useEffect(() => {
+    if (activeTab === "users" && !isLoading) loadUsers();
+  }, [activeTab, isLoading]);
+
+  useEffect(() => {
+    if (activeTab === "analytics" && !isLoading) loadStats();
+  }, [activeTab, isLoading]);
+
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/users", { headers: getAuthHeaders() });
+      if (res.status === 403) {
+        router.replace("/");
+        return;
+      }
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch {
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/stats", { headers: getAuthHeaders() });
+      if (res.status === 403) {
+        router.replace("/");
+        return;
+      }
+      const data = await res.json();
+      setStats(data && typeof data === "object" ? data : {});
+    } catch {
+      setStats({});
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserError("");
+    if (!newUserLogin.trim() || !newUserPassword.trim()) {
+      setUserError("Введите логин и пароль");
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      setUserError("Пароль не менее 6 символов");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          login: newUserLogin.trim(),
+          password: newUserPassword,
+          isAdmin: newUserIsAdmin,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUserError(data.error || "Ошибка создания");
+        return;
+      }
+      setNewUserLogin("");
+      setNewUserPassword("");
+      setNewUserIsAdmin(false);
+      loadUsers();
+    } catch {
+      setUserError("Ошибка сети");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSubjects = async () => {
     try {
@@ -366,12 +469,166 @@ export default function AdminPage() {
           <h1 className="text-2xl sm:text-4xl font-semibold text-black dark:text-zinc-50 mb-2">
             Админ-панель
           </h1>
-          <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400">
-            Управление вопросами и ответами
+          <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 mb-4">
+            Управление вопросами, пользователями и просмотр аналитики
           </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setActiveTab("subjects")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === "subjects"
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+              }`}
+            >
+              Предметы
+            </button>
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === "users"
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+              }`}
+            >
+              Пользователи
+            </button>
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === "analytics"
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+              }`}
+            >
+              Аналитика
+            </button>
+          </div>
         </div>
 
-        {/* Subject Management */}
+        {/* Вкладка: Пользователи */}
+        {activeTab === "users" && (
+          <div className="mb-8 p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
+            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">Пользователи</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+              Создавайте обычных пользователей и администраторов.
+            </p>
+            <form onSubmit={handleCreateUser} className="mb-6 p-4 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] bg-zinc-50 dark:bg-zinc-950 space-y-3 max-w-md">
+              <div>
+                <label className="block text-xs font-medium text-black dark:text-zinc-50 mb-1">Логин</label>
+                <input
+                  type="text"
+                  value={newUserLogin}
+                  onChange={(e) => setNewUserLogin(e.target.value)}
+                  className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-lg px-3 py-2 text-sm text-black dark:text-white"
+                  placeholder="Логин"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-black dark:text-zinc-50 mb-1">Пароль (не менее 6 символов)</label>
+                <input
+                  type="password"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-lg px-3 py-2 text-sm text-black dark:text-white"
+                  placeholder="Пароль"
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newUserIsAdmin}
+                  onChange={(e) => setNewUserIsAdmin(e.target.checked)}
+                  className="rounded border-black/[.08] dark:border-white/[.145]"
+                />
+                <span className="text-sm text-black dark:text-zinc-50">Администратор</span>
+              </label>
+              {userError && <p className="text-sm text-red-600 dark:text-red-400">{userError}</p>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] text-sm disabled:opacity-50"
+              >
+                {loading ? "Создание..." : "Создать пользователя"}
+              </button>
+            </form>
+            {usersLoading ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-black/[.08] dark:border-white/[.145] border-t-black dark:border-t-white"></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-black/[.08] dark:border-white/[.145]">
+                      <th className="py-2 pr-4 text-zinc-600 dark:text-zinc-400 font-medium">Логин</th>
+                      <th className="py-2 text-zinc-600 dark:text-zinc-400 font-medium">Роль</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.login} className="border-b border-black/[.08] dark:border-white/[.145]">
+                        <td className="py-2 pr-4 text-black dark:text-zinc-50">{u.login}</td>
+                        <td className="py-2 text-zinc-600 dark:text-zinc-400">{u.isAdmin ? "Админ" : "Пользователь"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {users.length === 0 && !usersLoading && (
+                  <p className="py-4 text-zinc-500 dark:text-zinc-500 text-sm">Нет пользователей</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Вкладка: Аналитика */}
+        {activeTab === "analytics" && (
+          <div className="mb-8 p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
+            <h2 className="text-xl font-semibold text-black dark:text-zinc-50 mb-4">Аналитика / Статистика</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+              Количество ответов по пользователям, предметам и вопросам (ошибки/повторы).
+            </p>
+            {statsLoading ? (
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] dark:border-white/[.145] border-t-black dark:border-t-white"></div>
+            ) : (
+              <div className="space-y-6">
+                {Object.keys(stats).length === 0 ? (
+                  <p className="text-zinc-500 dark:text-zinc-500 text-sm">Нет данных</p>
+                ) : (
+                  Object.entries(stats).map(([user, byFile]) => (
+                    <div key={user} className="border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl p-4">
+                      <h3 className="font-medium text-black dark:text-zinc-50 mb-3">{user}</h3>
+                      <div className="space-y-3 pl-2">
+                        {Object.entries(byFile).map(([fileId, byQuestion]) => {
+                          const total = Object.values(byQuestion).reduce((a, b) => a + b, 0);
+                          return (
+                            <div key={fileId} className="text-sm">
+                              <span className="text-zinc-600 dark:text-zinc-400 font-medium">{fileId}</span>
+                              <span className="text-zinc-500 dark:text-zinc-500 ml-2">— ответов по вопросам: {total}</span>
+                              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-500 pl-2">
+                                {Object.entries(byQuestion).slice(0, 5).map(([q, count]) => (
+                                  <div key={q} className="truncate max-w-full">
+                                    «{q.slice(0, 40)}{q.length > 40 ? "…" : ""}»: {count}
+                                  </div>
+                                ))}
+                                {Object.keys(byQuestion).length > 5 && (
+                                  <div>… и ещё {Object.keys(byQuestion).length - 5} вопросов</div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Subject Management (вкладка Предметы) */}
+        {activeTab === "subjects" && (
+        <>
         <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] bg-white dark:bg-black">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
             <label className="block text-sm font-medium text-black dark:text-zinc-50">
@@ -621,6 +878,8 @@ export default function AdminPage() {
               )}
             </div>
           </>
+        )}
+        </>
         )}
       </div>
     </div>

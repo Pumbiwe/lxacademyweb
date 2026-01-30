@@ -88,6 +88,23 @@ export async function GET(request: Request) {
   }
 }
 
+// Нормализация questions: строка -> { text }, объект с text -> { text }
+function normalizeQuestions(raw: unknown): Record<string, { text: string }> {
+  const result: Record<string, { text: string }> = {};
+  if (!raw || typeof raw !== "object") return result;
+  for (const [q, a] of Object.entries(raw)) {
+    if (typeof q !== "string" || !q.trim()) continue;
+    const text =
+      typeof a === "string"
+        ? a
+        : a && typeof a === "object" && "text" in a
+          ? String((a as { text?: unknown }).text ?? "")
+          : "";
+    result[q.trim()] = { text };
+  }
+  return result;
+}
+
 // Импорт предмета
 export async function PUT(request: Request) {
   try {
@@ -98,11 +115,12 @@ export async function PUT(request: Request) {
     }
 
     const subjectsData = await getSubjectsData();
-    
+    const normalizedQuestions = normalizeQuestions(questions);
+
     subjectsData[subjectId] = {
       name,
       description: description || "",
-      questions: questions || {},
+      questions: normalizedQuestions,
     };
 
     await saveSubjectsData(subjectsData);

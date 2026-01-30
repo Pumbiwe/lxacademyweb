@@ -40,6 +40,9 @@ export default function AdminPage() {
   const [newSubjectId, setNewSubjectId] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectDescription, setNewSubjectDescription] = useState("");
+  const [showImportText, setShowImportText] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importTextError, setImportTextError] = useState("");
   // Пользователи
   const [users, setUsers] = useState<UserItem[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -51,7 +54,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Record<string, Record<string, Record<string, number>>>>({});
   const [statsLoading, setStatsLoading] = useState(false);
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
@@ -340,6 +343,45 @@ export default function AdminPage() {
     } catch (error: any) {
       console.error("Failed to import", error);
       alert(error.message || "Ошибка при импорте");
+    }
+  };
+
+  const handleImportFromText = async () => {
+    setImportTextError("");
+    const text = importText.trim();
+    if (!text) {
+      setImportTextError("Вставьте JSON в поле выше");
+      return;
+    }
+    try {
+      const data = JSON.parse(text);
+      if (!data.id || !data.name) {
+        setImportTextError("В JSON должны быть поля id и name");
+        return;
+      }
+      const res = await fetch("/api/subjects/manage", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subjectId: data.id,
+          name: data.name,
+          description: data.description || "",
+          questions: data.questions || {},
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка импорта");
+      }
+      await loadSubjects();
+      setSelectedSubject(data.id);
+      loadQuestions(data.id);
+      setImportText("");
+      setImportTextError("");
+      setShowImportText(false);
+      alert("Предмет успешно импортирован");
+    } catch (error: any) {
+      setImportTextError(error.message || "Неверный JSON или ошибка сервера");
     }
   };
 
@@ -634,9 +676,9 @@ export default function AdminPage() {
             <label className="block text-sm font-medium text-black dark:text-zinc-50">
               Управление предметами
             </label>
-            <div className="flex gap-2 sm:gap-3">
+            <div className="flex gap-2 sm:gap-3 flex-wrap">
               <label className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white cursor-pointer whitespace-nowrap">
-                Импорт
+                Импорт из файла
                 <input
                   type="file"
                   accept=".json"
@@ -645,6 +687,13 @@ export default function AdminPage() {
                 />
               </label>
               <button
+                type="button"
+                onClick={() => setShowImportText(!showImportText)}
+                className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
+              >
+                Импорт из текста
+              </button>
+              <button
                 onClick={() => setShowAddSubjectForm(!showAddSubjectForm)}
                 className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-xs sm:text-sm whitespace-nowrap"
               >
@@ -652,6 +701,40 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+
+          {/* Импорт из текста */}
+          {showImportText && (
+            <div className="mb-6 p-4 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] bg-zinc-50 dark:bg-zinc-950">
+              <label className="block text-xs font-medium text-black dark:text-zinc-50 mb-2">
+                Вставьте JSON предмета (id, name, description, questions)
+              </label>
+              <textarea
+                value={importText}
+                onChange={(e) => { setImportText(e.target.value); setImportTextError(""); }}
+                rows={8}
+                className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-lg px-3 py-2 font-mono text-sm text-black dark:text-white resize-y"
+                placeholder='{"id":"subject-id","name":"Название","description":"","questions":{"Вопрос 1":"Ответ 1"}}'
+              />
+              {importTextError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{importTextError}</p>}
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={handleImportFromText}
+                  disabled={loading}
+                  className="px-3 py-1.5 rounded-lg bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] text-sm disabled:opacity-50"
+                >
+                  Импортировать
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowImportText(false); setImportText(""); setImportTextError(""); }}
+                  className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-sm text-black dark:text-white"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Add Subject Form */}
           {showAddSubjectForm && (

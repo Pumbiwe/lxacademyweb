@@ -77,11 +77,20 @@ export default function Home() {
             height={20}
             priority
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {isLoggedIn && (
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                {userLogin}
-              </span>
+              <>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {userLogin}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => router.push("/change-password")}
+                  className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white underline underline-offset-2"
+                >
+                  Сменить пароль
+                </button>
+              </>
             )}
             {isAdmin && (
               <button

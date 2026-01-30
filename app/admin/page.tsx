@@ -123,6 +123,27 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteUser = async (login: string) => {
+    if (!confirm(`Удалить пользователя «${login}»?`)) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/users?login=${encodeURIComponent(login)}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Ошибка удаления");
+        return;
+      }
+      loadUsers();
+    } catch {
+      alert("Ошибка сети");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setUserError("");
@@ -602,14 +623,25 @@ export default function AdminPage() {
                   <thead>
                     <tr className="border-b border-black/[.08] dark:border-white/[.145]">
                       <th className="py-2 pr-4 text-zinc-600 dark:text-zinc-400 font-medium">Логин</th>
-                      <th className="py-2 text-zinc-600 dark:text-zinc-400 font-medium">Роль</th>
+                      <th className="py-2 pr-4 text-zinc-600 dark:text-zinc-400 font-medium">Роль</th>
+                      <th className="py-2 text-zinc-600 dark:text-zinc-400 font-medium w-20">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u) => (
                       <tr key={u.login} className="border-b border-black/[.08] dark:border-white/[.145]">
                         <td className="py-2 pr-4 text-black dark:text-zinc-50">{u.login}</td>
-                        <td className="py-2 text-zinc-600 dark:text-zinc-400">{u.isAdmin ? "Админ" : "Пользователь"}</td>
+                        <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">{u.isAdmin ? "Админ" : "Пользователь"}</td>
+                        <td className="py-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(u.login)}
+                            disabled={loading}
+                            className="text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                          >
+                            Удалить
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

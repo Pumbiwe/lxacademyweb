@@ -85,10 +85,10 @@ export default function Home() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => router.push("/change-password")}
+                  onClick={() => router.push("/profile")}
                   className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white underline underline-offset-2"
                 >
-                  Сменить пароль
+                  Личный кабинет
                 </button>
               </>
             )}

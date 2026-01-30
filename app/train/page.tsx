@@ -38,7 +38,13 @@ function TrainContent() {
         const termsFromErrors = list
           .filter((x: any) => x && typeof x.question === "string" && typeof x.answer === "string")
           .map((x: any) => ({ question: x.question, answer: x.answer }));
-        setTerms(termsFromErrors.length > 0 ? shuffle(termsFromErrors) : []);
+        const shuffled = termsFromErrors.length > 0 ? shuffle(termsFromErrors) : [];
+        setTerms(shuffled);
+        setIndex(0);
+        setAnswer("");
+        setResult(null);
+        setErrors([]);
+        setSkipped(0);
       } catch {
         setTerms([]);
       }

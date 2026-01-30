@@ -52,3 +52,35 @@ export async function POST(req: Request) {
     return Response.json({ error: "Ошибка создания пользователя" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  const token = getBearerToken(req);
+  const payload = await verifyToken(token);
+  if (!payload?.isAdmin) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+  try {
+    const { searchParams } = new URL(req.url);
+    const login = searchParams.get("login");
+    if (!login || typeof login !== "string") {
+      return Response.json({ error: "Укажите логин" }, { status: 400 });
+    }
+    const loginSanitized = login.slice(0, 64).trim();
+    if (!loginSanitized) {
+      return Response.json({ error: "Некорректный логин" }, { status: 400 });
+    }
+    if (loginSanitized === payload.login) {
+      return Response.json({ error: "Нельзя удалить самого себя" }, { status: 400 });
+    }
+    const users = await getUsersData();
+    if (!users[loginSanitized]) {
+      return Response.json({ error: "Пользователь не найден" }, { status: 404 });
+    }
+    delete users[loginSanitized];
+    await saveUsersData(users);
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error("Users DELETE error:", error);
+    return Response.json({ error: "Ошибка удаления пользователя" }, { status: 500 });
+  }
+}

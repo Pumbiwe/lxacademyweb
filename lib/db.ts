@@ -1,56 +1,49 @@
 // lib/db.ts
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 import fs from "fs";
 import path from "path";
 
 const SUBJECTS_KEY = "subjects";
 
-// Проверяем, доступен ли KV
-function isKvAvailable(): boolean {
-  return !!(
-    process.env.KV_REST_API_URL &&
-    process.env.KV_REST_API_TOKEN
-  );
+// Проверяем, доступен ли Redis (Upstash или Vercel KV)
+function isRedisAvailable(): boolean {
+  // Upstash / Vercel Redis
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+    return true;
+  // Старый Vercel KV (мигрирован в Upstash)
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) return true;
+  return false;
 }
 
-// Безопасный доступ к KV (только если доступен)
-async function getKvData(key: string): Promise<any> {
-  if (!isKvAvailable()) {
-    return null;
+// Кэшируемый клиент Redis
+let redisClient: Redis | null = null;
+
+function getRedisClient(): Redis | null {
+  if (!isRedisAvailable()) return null;
+  if (!redisClient) {
+    redisClient = new Redis({
+      url:
+        process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || "",
+      token:
+        process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || "",
+    });
   }
-  try {
-    return await kv.get(key);
-  } catch (error) {
-    console.error("KV get error:", error);
-    return null;
-  }
+  return redisClient;
 }
 
-async function setKvData(key: string, value: any): Promise<void> {
-  if (!isKvAvailable()) {
-    throw new Error("KV is not available");
-  }
-  try {
-    await kv.set(key, value);
-  } catch (error) {
-    console.error("KV set error:", error);
-    throw error;
-  }
-}
-
-// Получить данные предметов из KV или файла
+// Получить данные предметов из Redis или файла
 export async function getSubjectsData(): Promise<any> {
-  if (isKvAvailable()) {
+  const redis = getRedisClient();
+  if (redis) {
     try {
-      const data = await getKvData(SUBJECTS_KEY);
+      const data = await redis.get(SUBJECTS_KEY);
       if (data) {
         return data;
       }
-      // Если данных нет в KV, инициализируем из файла
+      // Если данных нет в Redis, инициализируем из файла
       return await initializeFromFile();
     } catch (error) {
-      console.error("KV read error:", error);
-      // Fallback на файл при ошибке KV
+      console.error("Redis read error:", error);
       return getSubjectsDataFromFile();
     }
   }
@@ -58,14 +51,15 @@ export async function getSubjectsData(): Promise<any> {
   return getSubjectsDataFromFile();
 }
 
-// Сохранить данные предметов в KV или файл
+// Сохранить данные предметов в Redis или файл
 export async function saveSubjectsData(data: any): Promise<void> {
-  if (isKvAvailable()) {
+  const redis = getRedisClient();
+  if (redis) {
     try {
-      await setKvData(SUBJECTS_KEY, data);
+      await redis.set(SUBJECTS_KEY, data);
       return;
     } catch (error) {
-      console.error("KV write error:", error);
+      console.error("Redis write error:", error);
       throw error;
     }
   }
@@ -80,19 +74,29 @@ function getSubjectsDataFromFile(): any {
   return JSON.parse(fileContents);
 }
 
-// Сохранить данные в файл
+// Сохранить данные в файл (только локально)
 function saveSubjectsDataToFile(data: any): void {
   const filePath = path.join(process.cwd(), "data", "subjects.json");
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error: any) {
+    if (error.code === "EROFS") {
+      throw new Error(
+        "Файловая система только для чтения. Настройте Upstash Redis: Vercel → Integrations → Upstash → Connect."
+      );
+    }
+    throw error;
+  }
 }
 
-// Инициализировать KV из файла (только один раз)
+// Инициализировать Redis из файла при первом запуске
 async function initializeFromFile(): Promise<any> {
   try {
     const fileData = getSubjectsDataFromFile();
-    if (isKvAvailable()) {
-      await setKvData(SUBJECTS_KEY, fileData);
-      console.log("Initialized KV from file");
+    const redis = getRedisClient();
+    if (redis) {
+      await redis.set(SUBJECTS_KEY, fileData);
+      console.log("Initialized Redis from file");
     }
     return fileData;
   } catch (error) {

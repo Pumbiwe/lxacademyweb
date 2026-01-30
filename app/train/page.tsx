@@ -27,6 +27,20 @@ function TrainContent() {
   const file = searchParams.get("file") || "termsobj";
   const modeErrors = searchParams.get("mode") === "errors";
   const errorsKey = `train_errors_${file}`;
+  const [subjectName, setSubjectName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/subjects")
+      .then((r) => r.json())
+      .then((data: { id: string; name: string }[]) => {
+        if (cancelled) return;
+        const subject = Array.isArray(data) ? data.find((s) => s.id === file) : null;
+        setSubjectName(subject?.name ?? "");
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [file]);
 
   useEffect(() => {
     setLoading(true);
@@ -35,9 +49,13 @@ function TrainContent() {
         const raw = typeof window !== "undefined" ? sessionStorage.getItem(errorsKey) : null;
         const parsed = raw ? JSON.parse(raw) : null;
         const list = Array.isArray(parsed) ? parsed : [];
-        const termsFromErrors = list
-          .filter((x: any) => x && typeof x.question === "string" && typeof x.answer === "string")
-          .map((x: any) => ({ question: x.question, answer: x.answer }));
+        const byQuestion = new Map<string, { question: string; answer: string }>();
+        for (const x of list) {
+          if (x && typeof x.question === "string" && typeof x.answer === "string" && !byQuestion.has(x.question)) {
+            byQuestion.set(x.question, { question: x.question, answer: x.answer });
+          }
+        }
+        const termsFromErrors = Array.from(byQuestion.values());
         const shuffled = termsFromErrors.length > 0 ? shuffle(termsFromErrors) : [];
         setTerms(shuffled);
         setIndex(0);
@@ -67,8 +85,10 @@ function TrainContent() {
     }
   }, [index, loading]);
 
+  const displayName = subjectName || getFileName(file);
+
   if (loading) {
-    return <LoadingScreen file={file} />;
+    return <LoadingScreen subjectName={displayName} />;
   }
 
   // Режим "только ошибки": если нет сохранённых ошибок — показываем экран "нет ошибок"
@@ -98,7 +118,7 @@ function TrainContent() {
 
   // Проверяем, закончились ли вопросы ДО попытки обратиться к current
   if (terms.length === 0) {
-    return <CompletionScreen file={file} router={router} errors={errors} skipped={skipped} />;
+    return <CompletionScreen file={file} subjectName={displayName} router={router} errors={errors} skipped={skipped} />;
   }
 
   // Проверяем, существует ли текущий вопрос
@@ -106,7 +126,7 @@ function TrainContent() {
   
   if (!current) {
     // Если индекса нет, значит вопросы закончились
-    return <CompletionScreen file={file} router={router} errors={errors} skipped={skipped} />;
+    return <CompletionScreen file={file} subjectName={displayName} router={router} errors={errors} skipped={skipped} />;
   }
 
   function check() {
@@ -171,7 +191,7 @@ function TrainContent() {
                 Вопрос {index + 1} из {terms.length}
               </div>
               <div className="px-3 py-1 rounded-full border border-solid border-black/[.08] dark:border-white/[.145] text-xs">
-                {getFileName(file)}
+                {displayName}
               </div>
             </div>
           </div>
@@ -227,23 +247,25 @@ function TrainContent() {
 }
 
 // Отдельные компоненты для экранов загрузки и завершения
-function LoadingScreen({ file }: { file: string }) {
+function LoadingScreen({ subjectName }: { subjectName: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <div className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
         <div className="text-center w-full">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] border-t-black dark:border-white/[.145] dark:border-t-white mx-auto mb-4"></div>
           <p className="text-lg text-zinc-600 dark:text-zinc-400">Загрузка вопросов...</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2">
-            {getFileName(file)}
-          </p>
+          {subjectName && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2">
+              {subjectName}
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function CompletionScreen({ file, router, errors, skipped }: { file: string; router: any; errors: ErrorRecord[]; skipped: number }) {
+function CompletionScreen({ file, subjectName, router, errors, skipped }: { file: string; subjectName: string; router: any; errors: ErrorRecord[]; skipped: number }) {
   const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
@@ -287,7 +309,7 @@ function CompletionScreen({ file, router, errors, skipped }: { file: string; rou
               ✓ Тренировка завершена
             </h1>
             <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-              Вы ответили на все вопросы по теме "{getFileName(file)}".
+              Вы ответили на все вопросы по теме "{subjectName}".
             </p>
           </div>
 

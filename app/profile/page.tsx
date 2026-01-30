@@ -74,6 +74,11 @@ export default function ProfilePage() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.replace("/");
+  };
+
   if (!isLoggedIn) {
     return null;
   }
@@ -128,6 +133,15 @@ export default function ProfilePage() {
                   </button>
                 </div>
               )}
+              <div className="pt-3 mt-3 border-t border-black/[.08] dark:border-white/[.145]">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                >
+                  Выйти из аккаунта
+                </button>
+              </div>
             </div>
           </div>
 

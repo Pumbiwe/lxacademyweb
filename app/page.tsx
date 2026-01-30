@@ -38,14 +38,6 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    setUserLogin("");
-    setIsAdmin(false);
-    router.refresh();
-  };
-
   const handleStartTraining = () => {
     if (selectedFile) {
       router.push(`/train?file=${selectedFile}`);
@@ -79,18 +71,14 @@ export default function Home() {
           />
           <div className="flex items-center gap-3 flex-wrap">
             {isLoggedIn && (
-              <>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {userLogin}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => router.push("/profile")}
-                  className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white underline underline-offset-2"
-                >
-                  Личный кабинет
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                title="Личный кабинет"
+                className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white font-medium py-1 px-0 rounded transition-colors min-w-0 truncate max-w-[140px] sm:max-w-none"
+              >
+                {userLogin}
+              </button>
             )}
             {isAdmin && (
               <button
@@ -145,14 +133,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row">
-          {isLoggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            >
-              Logout
-            </button>
-          ) : (
+          {!isLoggedIn && (
             <a
               className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
               href="/login"

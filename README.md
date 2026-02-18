@@ -4,7 +4,7 @@
   <img src="./public/next.svg" width="120" alt="LXAcademy Logo" />
 </p>
 
-<p align="center">
+<p align="center"> 
   Full-stack educational platform built with Next.js (App UI + API routes + Auth + DB)
 </p>
 

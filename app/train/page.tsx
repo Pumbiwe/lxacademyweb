@@ -196,7 +196,10 @@ function TrainContent() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-semibold leading-tight text-black dark:text-zinc-50 mb-6">
+          <h1
+            className="text-2xl font-semibold leading-tight text-black dark:text-zinc-50 mb-6"
+            title={current.answer}
+          >
             {current.question}
           </h1>
 

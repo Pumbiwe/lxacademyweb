@@ -10,8 +10,8 @@
 
 <!-- Badges -->
 <p align="center">
-  <a href="https://github.com/Pumbiwe/lxacademyweb/actions/workflows/node.yml">
-    <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Pumbiwe/lxacademyweb/node.yml?branch=main" />
+  <a href="https://vercel.com">
+    <img alt="Vercel Deployment" src="https://img.shields.io/github/deployments/Pumbiwe/lxacademyweb/Production?label=vercel&logo=vercel" />
   </a>
   <a href="https://github.com/Pumbiwe/lxacademyweb/blob/main/LICENSE">
     <img alt="License" src="https://img.shields.io/github/license/Pumbiwe/lxacademyweb" />

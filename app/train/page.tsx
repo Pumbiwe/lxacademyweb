@@ -13,9 +13,17 @@ interface ErrorRecord {
   similarity: number;
 }
 
+interface TrainTerm {
+  question: string;
+  answer: string;
+  isRepeat?: boolean;
+  hadWrongAttempt?: boolean;
+}
+
 function TrainContent() {
+  const CORRECT_FOLLOWUP_REPEAT_COUNT = 2;
   const router = useRouter();
-  const [terms, setTerms] = useState<any[]>([]);
+  const [terms, setTerms] = useState<TrainTerm[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<number | null>(null);
@@ -55,7 +63,11 @@ function TrainContent() {
             byQuestion.set(x.question, { question: x.question, answer: x.answer });
           }
         }
-        const termsFromErrors = Array.from(byQuestion.values());
+        const termsFromErrors = Array.from(byQuestion.values()).map((term) => ({
+          ...term,
+          isRepeat: false,
+          hadWrongAttempt: false,
+        }));
         const shuffled = termsFromErrors.length > 0 ? shuffle(termsFromErrors) : [];
         setTerms(shuffled);
         setIndex(0);
@@ -72,7 +84,15 @@ function TrainContent() {
     fetch(`/api/terms?file=${file}`)
       .then(r => r.json())
       .then(data => {
-        setTerms(shuffle(data));
+        const normalizedData = Array.isArray(data)
+          ? data.map((term: any) => ({
+              question: term.question,
+              answer: term.answer,
+              isRepeat: false,
+              hadWrongAttempt: false,
+            }))
+          : [];
+        setTerms(shuffle(normalizedData));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -144,9 +164,31 @@ function TrainContent() {
         correctAnswer: current.answer,
         similarity: score,
       }]);
+
+      // Помечаем, что по этому вопросу уже была ошибка.
+      setTerms(prev =>
+        prev.map((term, termIndex) =>
+          termIndex === index ? { ...term, hadWrongAttempt: true } : term
+        )
+      );
+      return;
     }
 
-    if (score >= 1) {
+    if (score >= 0.85) {
+      // После первого правильного ответа на "оригинальный" вопрос
+      // задаём этот же вопрос ещё 2 раза.
+      if (!current.isRepeat && current.hadWrongAttempt) {
+        setTerms(prev => {
+          const repeats = Array.from({ length: CORRECT_FOLLOWUP_REPEAT_COUNT }, () => ({
+            question: current.question,
+            answer: current.answer,
+            isRepeat: true,
+            hadWrongAttempt: false,
+          }));
+          return [...prev.slice(0, index + 1), ...repeats, ...prev.slice(index + 1)];
+        });
+      }
+
       setTimeout(() => {
         setIndex(i => i + 1);
         setAnswer("");
@@ -397,7 +439,7 @@ function CompletionScreen({ file, subjectName, router, errors, skipped }: { file
   );
 }
 
-function shuffle(arr: any[]) {
+function shuffle(arr: TrainTerm[]) {
   const newArr = [...arr];
   for (let i = newArr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

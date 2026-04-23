@@ -951,17 +951,30 @@ export default function AdminPage() {
                       Ответ
                     </label>
                     <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <label className="flex items-center gap-2 text-sm text-black dark:text-zinc-50">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label
+                          className={`cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors ${
+                            newQuestionType === "single"
+                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                              : "border-black/[.08] text-black hover:bg-black/[.04] dark:border-white/[.145] dark:text-zinc-50 dark:hover:bg-[#1a1a1a]"
+                          }`}
+                        >
                           <input
                             type="radio"
                             name="question-type"
                             checked={newQuestionType === "single"}
                             onChange={() => setNewQuestionType("single")}
+                            className="sr-only"
                           />
                           Один ответ (одно поле)
                         </label>
-                        <label className="flex items-center gap-2 text-sm text-black dark:text-zinc-50">
+                        <label
+                          className={`cursor-pointer rounded-full border px-4 py-2 text-sm transition-colors ${
+                            newQuestionType === "multi"
+                              ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                              : "border-black/[.08] text-black hover:bg-black/[.04] dark:border-white/[.145] dark:text-zinc-50 dark:hover:bg-[#1a1a1a]"
+                          }`}
+                        >
                           <input
                             type="radio"
                             name="question-type"
@@ -973,6 +986,7 @@ export default function AdminPage() {
                               }
                               setNewFieldsCount((prev) => Math.max(2, prev));
                             }}
+                            className="sr-only"
                           />
                           Несколько полей ответа
                         </label>
@@ -993,12 +1007,13 @@ export default function AdminPage() {
                               Количество полей
                             </label>
                             <input
-                              type="number"
-                              min={2}
-                              max={20}
-                              value={newFieldsCount}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={String(newFieldsCount)}
                               onChange={(e) => {
-                                const raw = Number(e.target.value);
+                                const digits = e.target.value.replace(/\D/g, "");
+                                const raw = Number(digits || "2");
                                 const nextCount = Number.isFinite(raw) ? Math.min(20, Math.max(2, Math.floor(raw))) : 2;
                                 setNewFieldsCount(nextCount);
                                 setNewAnswers((prev) =>
@@ -1091,11 +1106,6 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm sm:text-base text-black dark:text-zinc-50 mb-2 break-words">
                           {q.question}
-                        </div>
-                        <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 break-words">
-                          {q.type === "multi"
-                            ? `Тип: несколько полей (${q.fieldsCount || q.answers?.length || 2})`
-                            : "Тип: один ответ"}
                         </div>
                         <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 break-words mt-1">
                           {q.type === "multi" && Array.isArray(q.answers) && q.answers.length > 0

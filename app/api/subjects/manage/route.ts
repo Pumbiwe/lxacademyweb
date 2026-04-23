@@ -88,19 +88,38 @@ export async function GET(request: Request) {
   }
 }
 
-// Нормализация questions: строка -> { text }, объект с text -> { text }
-function normalizeQuestions(raw: unknown): Record<string, { text: string }> {
-  const result: Record<string, { text: string }> = {};
+// Нормализация questions: строка -> { text }, объект -> расширенный формат.
+function normalizeQuestions(raw: unknown): Record<string, { text: string; type?: "single" | "multi"; fieldsCount?: number; answers?: string[] }> {
+  const result: Record<string, { text: string; type?: "single" | "multi"; fieldsCount?: number; answers?: string[] }> = {};
   if (!raw || typeof raw !== "object") return result;
   for (const [q, a] of Object.entries(raw)) {
     if (typeof q !== "string" || !q.trim()) continue;
+    if (typeof a === "string") {
+      result[q.trim()] = { text: a };
+      continue;
+    }
+
     const text =
-      typeof a === "string"
-        ? a
-        : a && typeof a === "object" && "text" in a
-          ? String((a as { text?: unknown }).text ?? "")
-          : "";
-    result[q.trim()] = { text };
+      a && typeof a === "object" && "text" in a
+        ? String((a as { text?: unknown }).text ?? "")
+        : "";
+    const type = a && typeof a === "object" && (a as { type?: unknown }).type === "multi" ? "multi" : "single";
+    const answers = a && typeof a === "object" && Array.isArray((a as { answers?: unknown[] }).answers)
+      ? (a as { answers?: unknown[] }).answers!
+          .map((part) => String(part ?? "").trim())
+          .filter(Boolean)
+      : [];
+    const parsedCount = a && typeof a === "object" ? Number((a as { fieldsCount?: unknown }).fieldsCount) : NaN;
+    const fieldsCount = Number.isFinite(parsedCount) && parsedCount > 0
+      ? Math.floor(parsedCount)
+      : (answers.length > 0 ? answers.length : (type === "multi" ? 2 : 1));
+
+    result[q.trim()] = {
+      text,
+      type,
+      fieldsCount: type === "multi" ? Math.max(2, fieldsCount) : 1,
+      answers: type === "multi" ? answers.slice(0, Math.max(2, fieldsCount)) : [],
+    };
   }
   return result;
 }

@@ -15,6 +15,9 @@ interface Subject {
 interface Question {
   question: string;
   answer: string;
+  type?: "single" | "multi";
+  fieldsCount?: number;
+  answers?: string[];
 }
 
 type AdminTab = "subjects" | "users" | "analytics";
@@ -35,6 +38,9 @@ export default function AdminPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState("");
+  const [newQuestionType, setNewQuestionType] = useState<"single" | "multi">("single");
+  const [newFieldsCount, setNewFieldsCount] = useState(2);
+  const [newAnswers, setNewAnswers] = useState<string[]>(["", ""]);
   const [loading, setLoading] = useState(false);
   const [showAddSubjectForm, setShowAddSubjectForm] = useState(false);
   const [newSubjectId, setNewSubjectId] = useState("");
@@ -218,10 +224,37 @@ export default function AdminPage() {
     setShowAddForm(false);
     setNewQuestion(question.question);
     setNewAnswer(question.answer);
+    const type = question.type === "multi" ? "multi" : "single";
+    setNewQuestionType(type);
+    if (type === "multi") {
+      const expectedCount = Math.max(2, Number(question.fieldsCount) || question.answers?.length || 2);
+      const sourceAnswers = Array.isArray(question.answers) && question.answers.length > 0
+        ? question.answers
+        : question.answer.split("|").map((part) => part.trim()).filter(Boolean);
+      const normalized = Array.from({ length: expectedCount }, (_, idx) => sourceAnswers[idx] ?? "");
+      setNewFieldsCount(expectedCount);
+      setNewAnswers(normalized);
+      setNewAnswer(normalized.map((part) => part.trim()).join(" | "));
+    } else {
+      setNewFieldsCount(2);
+      setNewAnswers(["", ""]);
+    }
   };
 
   const handleSave = async () => {
-    if (!selectedSubject || !newQuestion.trim() || !newAnswer.trim()) return;
+    if (!selectedSubject || !newQuestion.trim()) return;
+    const isMulti = newQuestionType === "multi";
+    const cleanedAnswers = isMulti
+      ? newAnswers.map((item) => item.trim())
+      : [];
+    const hasEmptyMulti = isMulti && cleanedAnswers.some((item) => !item);
+    const answerToSave = isMulti
+      ? cleanedAnswers.join(" | ")
+      : newAnswer.trim();
+    if (!answerToSave || hasEmptyMulti) {
+      alert(isMulti ? "Заполните все поля ответа" : "Введите ответ");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -234,7 +267,10 @@ export default function AdminPage() {
             subjectId: selectedSubject,
             oldQuestion: editingQuestion.question,
             newQuestion: newQuestion.trim(),
-            newAnswer: newAnswer.trim(),
+            newAnswer: answerToSave,
+            type: newQuestionType,
+            fieldsCount: newQuestionType === "multi" ? newFieldsCount : 1,
+            answers: newQuestionType === "multi" ? cleanedAnswers : [],
           }),
         });
 
@@ -250,7 +286,10 @@ export default function AdminPage() {
           body: JSON.stringify({
             subjectId: selectedSubject,
             question: newQuestion.trim(),
-            answer: newAnswer.trim(),
+            answer: answerToSave,
+            type: newQuestionType,
+            fieldsCount: newQuestionType === "multi" ? newFieldsCount : 1,
+            answers: newQuestionType === "multi" ? cleanedAnswers : [],
           }),
         });
 
@@ -262,6 +301,9 @@ export default function AdminPage() {
 
       setNewQuestion("");
       setNewAnswer("");
+      setNewQuestionType("single");
+      setNewFieldsCount(2);
+      setNewAnswers(["", ""]);
       setEditingQuestion(null);
       setShowAddForm(false);
       loadQuestions(selectedSubject);
@@ -299,6 +341,9 @@ export default function AdminPage() {
     setShowAddForm(false);
     setNewQuestion("");
     setNewAnswer("");
+    setNewQuestionType("single");
+    setNewFieldsCount(2);
+    setNewAnswers(["", ""]);
   };
 
   const handleLogout = () => {
@@ -905,18 +950,95 @@ export default function AdminPage() {
                     <label className="block text-sm font-medium text-black dark:text-zinc-50 mb-2">
                       Ответ
                     </label>
-                    <textarea
-                      value={newAnswer}
-                      onChange={(e) => setNewAnswer(e.target.value)}
-                      rows={3}
-                      className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white resize-none"
-                      placeholder="Введите ответ"
-                    />
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="flex items-center gap-2 text-sm text-black dark:text-zinc-50">
+                          <input
+                            type="radio"
+                            name="question-type"
+                            checked={newQuestionType === "single"}
+                            onChange={() => setNewQuestionType("single")}
+                          />
+                          Один ответ (одно поле)
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-black dark:text-zinc-50">
+                          <input
+                            type="radio"
+                            name="question-type"
+                            checked={newQuestionType === "multi"}
+                            onChange={() => {
+                              setNewQuestionType("multi");
+                              if (newAnswers.length < 2) {
+                                setNewAnswers(["", ""]);
+                              }
+                              setNewFieldsCount((prev) => Math.max(2, prev));
+                            }}
+                          />
+                          Несколько полей ответа
+                        </label>
+                      </div>
+
+                      {newQuestionType === "single" ? (
+                        <textarea
+                          value={newAnswer}
+                          onChange={(e) => setNewAnswer(e.target.value)}
+                          rows={3}
+                          className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white resize-none"
+                          placeholder="Введите ответ"
+                        />
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <label className="text-sm text-zinc-600 dark:text-zinc-400">
+                              Количество полей
+                            </label>
+                            <input
+                              type="number"
+                              min={2}
+                              max={20}
+                              value={newFieldsCount}
+                              onChange={(e) => {
+                                const raw = Number(e.target.value);
+                                const nextCount = Number.isFinite(raw) ? Math.min(20, Math.max(2, Math.floor(raw))) : 2;
+                                setNewFieldsCount(nextCount);
+                                setNewAnswers((prev) =>
+                                  Array.from({ length: nextCount }, (_, idx) => prev[idx] ?? "")
+                                );
+                              }}
+                              className="w-24 bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            {Array.from({ length: newFieldsCount }).map((_, idx) => (
+                              <input
+                                key={idx}
+                                type="text"
+                                value={newAnswers[idx] ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setNewAnswers((prev) =>
+                                    prev.map((item, itemIdx) => (itemIdx === idx ? value : item))
+                                  );
+                                }}
+                                className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-2 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white text-black dark:text-white"
+                                placeholder={`Ответ для поля ${idx + 1}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSave}
-                      disabled={loading || !newQuestion.trim() || !newAnswer.trim()}
+                      disabled={
+                        loading ||
+                        !newQuestion.trim() ||
+                        (newQuestionType === "single"
+                          ? !newAnswer.trim()
+                          : newAnswers.some((item) => !item.trim()))
+                      }
                       className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? "Сохранение..." : "Сохранить"}
@@ -942,6 +1064,9 @@ export default function AdminPage() {
                     setEditingQuestion(null);
                     setNewQuestion("");
                     setNewAnswer("");
+                    setNewQuestionType("single");
+                    setNewFieldsCount(2);
+                    setNewAnswers(["", ""]);
                   }}
                   className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-sm sm:text-base"
                 >
@@ -968,7 +1093,14 @@ export default function AdminPage() {
                           {q.question}
                         </div>
                         <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 break-words">
-                          {q.answer}
+                          {q.type === "multi"
+                            ? `Тип: несколько полей (${q.fieldsCount || q.answers?.length || 2})`
+                            : "Тип: один ответ"}
+                        </div>
+                        <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 break-words mt-1">
+                          {q.type === "multi" && Array.isArray(q.answers) && q.answers.length > 0
+                            ? q.answers.join(" | ")
+                            : q.answer}
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">

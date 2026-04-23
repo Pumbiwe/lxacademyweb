@@ -13,10 +13,26 @@ export async function GET(request: Request) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
-    const entries = Object.entries(subject.questions).map(([q, a]: [string, any]) => ({
-      question: q,
-      answer: a.text,
-    }));
+    const entries = Object.entries(subject.questions).map(([q, a]: [string, any]) => {
+      const answer = typeof a?.text === "string" ? a.text : "";
+      const type = a?.type === "multi" ? "multi" : "single";
+      const answers = Array.isArray(a?.answers)
+        ? a.answers.map((item: unknown) => String(item ?? "").trim()).filter(Boolean)
+        : [];
+      const fieldsCountFromAnswers = answers.length > 0 ? answers.length : 1;
+      const fieldsCountRaw = Number(a?.fieldsCount);
+      const fieldsCount = Number.isFinite(fieldsCountRaw) && fieldsCountRaw > 0
+        ? Math.floor(fieldsCountRaw)
+        : fieldsCountFromAnswers;
+
+      return {
+        question: q,
+        answer,
+        type,
+        fieldsCount: type === "multi" ? Math.max(fieldsCount, 2) : 1,
+        answers: type === "multi" ? answers : [],
+      };
+    });
 
     return Response.json(entries);
   } catch (error: any) {

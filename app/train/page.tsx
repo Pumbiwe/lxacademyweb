@@ -16,6 +16,9 @@ interface ErrorRecord {
 interface TrainTerm {
   question: string;
   answer: string;
+  type?: "single" | "multi";
+  fieldsCount?: number;
+  answers?: string[];
   isRepeat?: boolean;
 }
 
@@ -25,6 +28,7 @@ function TrainContent() {
   const [terms, setTerms] = useState<TrainTerm[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<ErrorRecord[]>([]);
@@ -56,10 +60,26 @@ function TrainContent() {
         const raw = typeof window !== "undefined" ? sessionStorage.getItem(errorsKey) : null;
         const parsed = raw ? JSON.parse(raw) : null;
         const list = Array.isArray(parsed) ? parsed : [];
-        const byQuestion = new Map<string, { question: string; answer: string }>();
+        const byQuestion = new Map<string, TrainTerm>();
         for (const x of list) {
-          if (x && typeof x.question === "string" && typeof x.answer === "string" && !byQuestion.has(x.question)) {
-            byQuestion.set(x.question, { question: x.question, answer: x.answer });
+          if (x && typeof x.question === "string" && !byQuestion.has(x.question)) {
+            const isMulti = x.type === "multi";
+            const fallbackAnswer = typeof x.answer === "string" ? x.answer : "";
+            const parsedAnswers = Array.isArray(x.answers)
+              ? x.answers.map((item: unknown) => String(item ?? "").trim()).filter(Boolean)
+              : [];
+            const count = Number(x.fieldsCount);
+            const fieldsCount = Number.isFinite(count) && count > 0
+              ? Math.floor(count)
+              : (parsedAnswers.length > 0 ? parsedAnswers.length : (isMulti ? 2 : 1));
+
+            byQuestion.set(x.question, {
+              question: x.question,
+              answer: fallbackAnswer,
+              type: isMulti ? "multi" : "single",
+              fieldsCount: isMulti ? Math.max(2, fieldsCount) : 1,
+              answers: isMulti ? parsedAnswers : [],
+            });
           }
         }
         const termsFromErrors = Array.from(byQuestion.values()).map((term) => ({
@@ -70,6 +90,7 @@ function TrainContent() {
         setTerms(shuffled);
         setIndex(0);
         setAnswer("");
+        setAnswers([]);
         setResult(null);
         setErrors([]);
         setSkipped(0);
@@ -82,10 +103,15 @@ function TrainContent() {
     fetch(`/api/terms?file=${file}`)
       .then(r => r.json())
       .then(data => {
-        const normalizedData = Array.isArray(data)
-          ? data.map((term: any) => ({
+        const normalizedData: TrainTerm[] = Array.isArray(data)
+          ? data.map((term: any): TrainTerm => ({
               question: term.question,
               answer: term.answer,
+              type: term.type === "multi" ? "multi" : "single",
+              fieldsCount: Number(term.fieldsCount) > 0 ? Math.floor(Number(term.fieldsCount)) : 1,
+              answers: Array.isArray(term.answers)
+                ? term.answers.map((item: unknown) => String(item ?? "").trim())
+                : [],
               isRepeat: false,
             }))
           : [];
@@ -103,6 +129,22 @@ function TrainContent() {
   }, [index, loading]);
 
   const displayName = subjectName || getFileName(file);
+  const current = terms[index];
+
+  useEffect(() => {
+    if (!current) return;
+    if (current.type === "multi") {
+      const count = Math.max(
+        2,
+        Number(current.fieldsCount) || (current.answers?.length ?? 0) || 2
+      );
+      setAnswers(Array.from({ length: count }, () => ""));
+      setAnswer("");
+      return;
+    }
+    setAnswer("");
+    setAnswers([]);
+  }, [index, current?.type, current?.fieldsCount]);
 
   if (loading) {
     return <LoadingScreen subjectName={displayName} />;
@@ -139,26 +181,45 @@ function TrainContent() {
   }
 
   // Проверяем, существует ли текущий вопрос
-  const current = terms[index];
-  
   if (!current) {
     // Если индекса нет, значит вопросы закончились
     return <CompletionScreen file={file} subjectName={displayName} router={router} errors={errors} skipped={skipped} />;
   }
 
   function check() {
-    const score = similarity(
-      answer.trim().toLowerCase(),
-      current.answer.toLowerCase()
-    );
+    const expectedAnswers =
+      current.type === "multi" && Array.isArray(current.answers) && current.answers.length > 0
+        ? current.answers
+        : current.answer
+            .split("|")
+            .map((part) => part.trim())
+            .filter(Boolean);
+
+    const userAnswer = current.type === "multi" ? answers.map((part) => part.trim()).join(" | ") : answer.trim();
+    const correctAnswer = current.type === "multi"
+      ? expectedAnswers.join(" | ")
+      : current.answer;
+
+    const score = current.type === "multi"
+      ? (() => {
+          const maxLen = Math.max(expectedAnswers.length, answers.length);
+          if (maxLen === 0) return 0;
+          const total = Array.from({ length: maxLen }).reduce((sum: number, _, idx) => {
+            const userPart = (answers[idx] ?? "").trim().toLowerCase();
+            const expectedPart = (expectedAnswers[idx] ?? "").trim().toLowerCase();
+            return sum + similarity(userPart, expectedPart);
+          }, 0);
+          return total / maxLen;
+        })()
+      : similarity(userAnswer.toLowerCase(), current.answer.toLowerCase());
     setResult(score);
 
     if (score < 0.85) {
       // Записываем ошибку
       setErrors(prev => [...prev, {
         question: current.question,
-        userAnswer: answer.trim(),
-        correctAnswer: current.answer,
+        userAnswer,
+        correctAnswer,
         similarity: score,
       }]);
 
@@ -179,6 +240,7 @@ function TrainContent() {
       setTimeout(() => {
         setIndex(i => i + 1);
         setAnswer("");
+        setAnswers([]);
         setResult(null);
       }, 400);
     }
@@ -194,6 +256,7 @@ function TrainContent() {
     setSkipped(prev => prev + 1);
     setIndex(i => i + 1);
     setAnswer("");
+    setAnswers([]);
     setResult(null);
   }
 
@@ -232,14 +295,40 @@ function TrainContent() {
             {current.question}
           </h1>
 
-          <input
-            className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Введите ответ"
-            autoFocus
-          />
+          {current.type === "multi" ? (
+            <div className="space-y-2 mb-4">
+              {Array.from({
+                length: Math.max(
+                  2,
+                  Number(current.fieldsCount) || (current.answers?.length ?? 0) || 2
+                ),
+              }).map((_, idx) => (
+                <input
+                  key={idx}
+                  className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+                  value={answers[idx] ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAnswers((prev) =>
+                      prev.map((item, itemIdx) => (itemIdx === idx ? value : item))
+                    );
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={`Введите ответ ${idx + 1}`}
+                  autoFocus={idx === 0}
+                />
+              ))}
+            </div>
+          ) : (
+            <input
+              className="w-full bg-white dark:bg-black border border-solid border-black/[.08] dark:border-white/[.145] rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
+              value={answer}
+              onChange={e => setAnswer(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Введите ответ"
+              autoFocus
+            />
+          )}
 
           <div className="flex flex-col gap-3 mb-6">
             <button
@@ -260,14 +349,18 @@ function TrainContent() {
           {result !== null && (
             <div className="space-y-3 p-4 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] mb-6">
               <div className={`font-medium ${result >= 0.85 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                {result >= 0.85 ? "✓ Правильно!" : "Попробуйте ещё раз"}
+                {result >= 1 ? "✓ Правильно!" : "Попробуйте ещё раз"}
               </div>
               <div className="text-sm text-zinc-600 dark:text-zinc-400">
                 Схожесть: {(result * 100).toFixed(1)}%
               </div>
               <div className="text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">Правильный ответ:</span>{" "}
-                <span className="text-black dark:text-white">{current.answer}</span>
+                <span className="text-black dark:text-white">
+                  {current.type === "multi" && Array.isArray(current.answers) && current.answers.length > 0
+                    ? current.answers.join(" | ")
+                    : current.answer}
+                </span>
               </div>
             </div>
           )}
@@ -303,7 +396,10 @@ function CompletionScreen({ file, subjectName, router, errors, skipped }: { file
   useEffect(() => {
     if (errors.length === 0 || typeof window === "undefined") return;
     try {
-      const errorsForRetry = errors.map((e) => ({ question: e.question, answer: e.correctAnswer }));
+      const errorsForRetry = errors.map((e) => ({
+        question: e.question,
+        answer: e.correctAnswer,
+      }));
       sessionStorage.setItem(`train_errors_${file}`, JSON.stringify(errorsForRetry));
     } catch (_) {}
   }, [file, errors]);

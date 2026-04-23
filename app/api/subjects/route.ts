@@ -20,18 +20,73 @@ export async function GET() {
 
 const MAX_QUESTION_LENGTH = 2000;
 const MAX_ANSWER_LENGTH = 5000;
+const MAX_MULTI_FIELDS = 20;
+
+type QuestionType = "single" | "multi";
+
+function normalizeQuestionPayload(payload: {
+  question: unknown;
+  answer: unknown;
+  type?: unknown;
+  fieldsCount?: unknown;
+  answers?: unknown;
+}) {
+  const q = typeof payload.question === "string" ? payload.question.slice(0, MAX_QUESTION_LENGTH).trim() : "";
+  const a = typeof payload.answer === "string" ? payload.answer.slice(0, MAX_ANSWER_LENGTH).trim() : "";
+  const rawType = payload.type === "multi" ? "multi" : "single";
+  const parsedAnswers = Array.isArray(payload.answers)
+    ? payload.answers
+        .map((item) => (typeof item === "string" ? item.slice(0, MAX_ANSWER_LENGTH).trim() : ""))
+        .filter(Boolean)
+    : [];
+  const requestedFieldsCount = Number(payload.fieldsCount);
+  const safeFieldsCount = Number.isFinite(requestedFieldsCount)
+    ? Math.min(MAX_MULTI_FIELDS, Math.max(2, Math.floor(requestedFieldsCount)))
+    : undefined;
+
+  let type: QuestionType = rawType;
+  let answers: string[] = parsedAnswers;
+  let fieldsCount = safeFieldsCount ?? parsedAnswers.length;
+
+  if (type === "multi") {
+    if (answers.length === 0) {
+      answers = a
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+    if (answers.length < 2) {
+      type = "single";
+      answers = [];
+      fieldsCount = 1;
+    } else {
+      fieldsCount = Math.max(2, fieldsCount || answers.length);
+      answers = answers.slice(0, fieldsCount);
+      if (answers.length < fieldsCount) {
+        answers = [...answers, ...Array.from({ length: fieldsCount - answers.length }, () => "")];
+      }
+    }
+  } else {
+    fieldsCount = 1;
+  }
+
+  if (!q || !a) {
+    return { error: "Invalid question or answer" } as const;
+  }
+
+  return { question: q, answer: a, type, fieldsCount, answers } as const;
+}
 
 export async function POST(request: Request) {
   try {
-    const { subjectId, question, answer } = await request.json();
+    const { subjectId, question, answer, type, fieldsCount, answers } = await request.json();
 
     if (!subjectId || !question || !answer) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
-    const q = typeof question === "string" ? question.slice(0, MAX_QUESTION_LENGTH).trim() : "";
-    const a = typeof answer === "string" ? answer.slice(0, MAX_ANSWER_LENGTH).trim() : "";
-    if (!q || !a) {
-      return Response.json({ error: "Invalid question or answer" }, { status: 400 });
+    const normalized = normalizeQuestionPayload({ question, answer, type, fieldsCount, answers });
+    if ("error" in normalized) {
+      return Response.json({ error: normalized.error }, { status: 400 });
     }
 
     const subjectsData = await getSubjectsData();
@@ -39,7 +94,12 @@ export async function POST(request: Request) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
-    subjectsData[subjectId].questions[q] = { text: a };
+    subjectsData[subjectId].questions[normalized.question] = {
+      text: normalized.answer,
+      type: normalized.type,
+      fieldsCount: normalized.type === "multi" ? normalized.fieldsCount : 1,
+      answers: normalized.type === "multi" ? normalized.answers : [],
+    };
 
     await saveSubjectsData(subjectsData);
 
@@ -52,15 +112,20 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { subjectId, oldQuestion, newQuestion, newAnswer } = await request.json();
+    const { subjectId, oldQuestion, newQuestion, newAnswer, type, fieldsCount, answers } = await request.json();
 
     if (!subjectId || !oldQuestion || !newQuestion || !newAnswer) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
-    const newQ = typeof newQuestion === "string" ? newQuestion.slice(0, MAX_QUESTION_LENGTH).trim() : "";
-    const newA = typeof newAnswer === "string" ? newAnswer.slice(0, MAX_ANSWER_LENGTH).trim() : "";
-    if (!newQ || !newA) {
-      return Response.json({ error: "Invalid question or answer" }, { status: 400 });
+    const normalized = normalizeQuestionPayload({
+      question: newQuestion,
+      answer: newAnswer,
+      type,
+      fieldsCount,
+      answers,
+    });
+    if ("error" in normalized) {
+      return Response.json({ error: normalized.error }, { status: 400 });
     }
 
     const subjectsData = await getSubjectsData();
@@ -68,10 +133,15 @@ export async function PUT(request: Request) {
       return Response.json({ error: "Subject not found" }, { status: 404 });
     }
 
-    if (oldQuestion !== newQ) {
+    if (oldQuestion !== normalized.question) {
       delete subjectsData[subjectId].questions[oldQuestion];
     }
-    subjectsData[subjectId].questions[newQ] = { text: newA };
+    subjectsData[subjectId].questions[normalized.question] = {
+      text: normalized.answer,
+      type: normalized.type,
+      fieldsCount: normalized.type === "multi" ? normalized.fieldsCount : 1,
+      answers: normalized.type === "multi" ? normalized.answers : [],
+    };
 
     await saveSubjectsData(subjectsData);
 

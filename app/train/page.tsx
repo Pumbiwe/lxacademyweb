@@ -17,11 +17,10 @@ interface TrainTerm {
   question: string;
   answer: string;
   isRepeat?: boolean;
-  hadWrongAttempt?: boolean;
 }
 
 function TrainContent() {
-  const CORRECT_FOLLOWUP_REPEAT_COUNT = 2;
+  const WRONG_REPEAT_COUNT = 2;
   const router = useRouter();
   const [terms, setTerms] = useState<TrainTerm[]>([]);
   const [index, setIndex] = useState(0);
@@ -66,7 +65,6 @@ function TrainContent() {
         const termsFromErrors = Array.from(byQuestion.values()).map((term) => ({
           ...term,
           isRepeat: false,
-          hadWrongAttempt: false,
         }));
         const shuffled = termsFromErrors.length > 0 ? shuffle(termsFromErrors) : [];
         setTerms(shuffled);
@@ -89,7 +87,6 @@ function TrainContent() {
               question: term.question,
               answer: term.answer,
               isRepeat: false,
-              hadWrongAttempt: false,
             }))
           : [];
         setTerms(shuffle(normalizedData));
@@ -165,30 +162,20 @@ function TrainContent() {
         similarity: score,
       }]);
 
-      // Помечаем, что по этому вопросу уже была ошибка.
-      setTerms(prev =>
-        prev.map((term, termIndex) =>
-          termIndex === index ? { ...term, hadWrongAttempt: true } : term
-        )
-      );
+      // Старая логика: при неверном ответе добавляем этот же вопрос ещё несколько раз.
+      setTerms(prev => {
+        const retries = Array.from({ length: WRONG_REPEAT_COUNT }, () => ({ ...current }));
+        return [...prev.slice(0, index + 1), ...retries, ...prev.slice(index + 1)];
+      });
       return;
     }
 
-    if (score >= 0.85) {
-      // После первого правильного ответа на "оригинальный" вопрос
-      // задаём этот же вопрос ещё 2 раза.
-      if (!current.isRepeat && current.hadWrongAttempt) {
-        setTerms(prev => {
-          const repeats = Array.from({ length: CORRECT_FOLLOWUP_REPEAT_COUNT }, () => ({
-            question: current.question,
-            answer: current.answer,
-            isRepeat: true,
-            hadWrongAttempt: false,
-          }));
-          return [...prev.slice(0, index + 1), ...repeats, ...prev.slice(index + 1)];
-        });
-      }
+    // Почти верно, но не 100%: остаёмся на текущем вопросе без повторов.
+    if (score < 1) {
+      return;
+    }
 
+    if (score >= 1) {
       setTimeout(() => {
         setIndex(i => i + 1);
         setAnswer("");

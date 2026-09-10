@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { decodeJwtPayload } from "@/lib/jwtPayload";
 
 interface Subject {
   id: string;
@@ -73,18 +74,14 @@ export default function AdminPage() {
       return;
     }
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (!payload.isAdmin) {
-        router.replace("/");
-        return;
-      }
-      
-      setIsLoading(false);
-      loadSubjects();
-    } catch (e) {
+    const payload = decodeJwtPayload(token);
+    if (!payload?.isAdmin) {
       router.replace("/");
+      return;
     }
+
+    setIsLoading(false);
+    loadSubjects();
   }, [router]);
 
   useEffect(() => {

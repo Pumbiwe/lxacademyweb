@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { decodeJwtPayload } from "@/lib/jwtPayload";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -22,14 +23,14 @@ export default function ProfilePage() {
       router.replace("/");
       return;
     }
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setUserLogin(payload.login || "");
-      setIsAdmin(!!payload.isAdmin);
-      setIsLoggedIn(true);
-    } catch {
+    const payload = decodeJwtPayload(token);
+    if (!payload) {
       router.replace("/");
+      return;
     }
+    setUserLogin(payload.login);
+    setIsAdmin(payload.isAdmin);
+    setIsLoggedIn(true);
   }, [router]);
 
   async function submit(e: React.FormEvent) {

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { decodeJwtPayload } from "@/lib/jwtPayload";
 
 export default function Home() {
   const router = useRouter();
@@ -16,12 +17,12 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeJwtPayload(token);
+      if (payload) {
         setIsLoggedIn(true);
         setUserLogin(payload.login);
-        setIsAdmin(payload.isAdmin || false);
-      } catch (e) {
+        setIsAdmin(payload.isAdmin);
+      } else {
         setIsLoggedIn(false);
       }
     }

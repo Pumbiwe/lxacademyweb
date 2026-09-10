@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { decodeJwtPayload } from "@/lib/jwtPayload";
 
 export default function LoginPage() {
   const [login, setLogin] = useState("");
@@ -46,16 +47,11 @@ export default function LoginPage() {
       }
 
       localStorage.setItem("token", data.token);
-      
-      // Декодируем токен для проверки isAdmin
-      try {
-        const payload = JSON.parse(atob(data.token.split('.')[1]));
-        if (payload.isAdmin) {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
-      } catch (e) {
+
+      const payload = decodeJwtPayload(data.token);
+      if (payload?.isAdmin) {
+        router.push("/admin");
+      } else {
         router.push("/");
       }
     } catch (error) {

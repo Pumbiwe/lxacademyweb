@@ -129,19 +129,65 @@ async function initializeFromFile(): Promise<any> {
 }
 
 // --- Пользователи ---
+export type UserRecord = { password: string; isAdmin: boolean };
+export type UsersMap = Record<string, UserRecord>;
+
+// bcrypt hash of "admin123" (cost 12) — fallback if Redis/file is empty or a JSON string
+const DEFAULT_USERS: UsersMap = {
+  admin: {
+    password: "$2a$12$2g/71x2qTkFAAE5IjelWb.ZGbVWtSIZqVGIaMIkn.ECUsYnBaaXoe",
+    isAdmin: true,
+  },
+};
+
 function getUsersFilePath() {
   return path.join(process.cwd(), "data", "users.json");
 }
 
-function getUsersDataFromFile(): Record<string, { password: string; isAdmin: boolean }> {
-  const filePath = getUsersFilePath();
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
+function parseUsersPayload(data: unknown): UsersMap | null {
+  let value: unknown = data;
+  for (let i = 0; i < 2; i++) {
+    if (typeof value !== "string") break;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([login, user]) =>
+      !!login &&
+      !!user &&
+      typeof user === "object" &&
+      typeof (user as UserRecord).password === "string"
+  );
+  if (entries.length === 0) return null;
+  const users: UsersMap = {};
+  for (const [login, user] of entries) {
+    const rec = user as UserRecord;
+    users[login] = { password: rec.password, isAdmin: !!rec.isAdmin };
+  }
+  return users;
 }
 
-function saveUsersDataToFile(data: Record<string, { password: string; isAdmin: boolean }>): void {
+function getUsersDataFromFile(): UsersMap {
+  try {
+    const fileContents = fs.readFileSync(getUsersFilePath(), "utf-8");
+    const parsed = parseUsersPayload(JSON.parse(fileContents));
+    if (parsed) return parsed;
+  } catch {
+    // missing or invalid file
+  }
+  return { ...DEFAULT_USERS };
+}
+
+function saveUsersDataToFile(data: UsersMap): void {
   const filePath = getUsersFilePath();
   try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
   } catch (error: any) {
     if (error.code === "EROFS") throw new Error("Файловая система только для чтения.");
@@ -149,16 +195,22 @@ function saveUsersDataToFile(data: Record<string, { password: string; isAdmin: b
   }
 }
 
-export async function getUsersData(): Promise<Record<string, { password: string; isAdmin: boolean }>> {
+export async function getUsersData(): Promise<UsersMap> {
   const redis = getRedisClient();
   if (redis) {
     try {
       const data = await redis.get(USERS_KEY);
-      if (data && typeof data === "object" && Object.keys(data as object).length > 0) {
-        return data as Record<string, { password: string; isAdmin: boolean }>;
+      const parsed = parseUsersPayload(data);
+      if (parsed) {
+        if (typeof data === "string") {
+          await redis.set(USERS_KEY, parsed);
+        }
+        return parsed;
       }
       const fileData = getUsersDataFromFile();
-      await redis.set(USERS_KEY, fileData);
+      if (data == null) {
+        await redis.set(USERS_KEY, fileData);
+      }
       return fileData;
     } catch (error) {
       console.error("Redis users read error:", error);

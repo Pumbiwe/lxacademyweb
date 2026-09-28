@@ -85,8 +85,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+      <main className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
         <div className="w-full max-w-md">
           <button
             onClick={() => router.push("/")}
@@ -208,14 +208,14 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] disabled:opacity-50"
+                  className="btn-gradient px-4 py-2 rounded-xl font-medium disabled:opacity-50"
                 >
                   {loading ? "Сохранение..." : "Сменить пароль"}
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push("/")}
-                  className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+                  className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-black dark:text-white"
                 >
                   На главную
                 </button>

@@ -47,8 +47,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        <div className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+      <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+        <div className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
           <div className="text-center w-full">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] border-t-black dark:border-white/[.145] dark:border-t-white mx-auto mb-4"></div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400">Загрузка...</p>
@@ -59,8 +59,8 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+      <main className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
         <div className="flex items-center justify-between w-full mb-8">
           <Image
             className="dark:invert"
@@ -84,7 +84,7 @@ export default function Home() {
             {isAdmin && (
               <button
                 onClick={() => router.push("/admin")}
-                className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white font-medium"
+                className="btn-ghost px-4 py-2 rounded-xl text-sm font-medium"
               >
                 Панель управления
               </button>
@@ -109,7 +109,7 @@ export default function Home() {
               className={`w-full rounded-xl border border-solid transition-colors flex items-center ${
                 selectedFile === subject.id
                   ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-black/[.08] hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+                  : "border-white/[.145] hover:bg-white/18"
               }`}
             >
               <div className="flex items-center justify-between w-full p-6">
@@ -136,7 +136,7 @@ export default function Home() {
         <div className="flex flex-col gap-4 text-base font-medium w-full sm:flex-row">
           {!isLoggedIn && (
             <a
-              className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+              className="btn-ghost flex h-12 w-full items-center justify-center rounded-full px-5 md:w-[158px]"
               href="/login"
             >
               Login
@@ -145,7 +145,7 @@ export default function Home() {
           <button
             onClick={handleStartTraining}
             disabled={!selectedFile}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] disabled:opacity-50 disabled:cursor-not-allowed md:w-[158px]"
+            className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 disabled:opacity-50 disabled:cursor-not-allowed md:w-[158px]"
           >
             Начать
           </button>

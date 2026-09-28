@@ -68,13 +68,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell min-h-screen flex items-center justify-center p-4 sm:p-8 font-sans">
+      <main className="page-panel flex w-full max-w-md flex-col items-center text-center">
         <div className="w-full">
-          <div className="mb-8">
+          <div className="mb-8 flex justify-center">
             <button
               onClick={() => router.push("/")}
-              className="hover:opacity-80 transition-opacity mb-6"
+              className="hover:opacity-80 transition-opacity"
             >
               <Image
                 className="dark:invert"
@@ -86,7 +86,7 @@ export default function LoginPage() {
               />
             </button>
           </div>
-          <div className="max-w-xl w-full space-y-6">
+          <div className="w-full space-y-6">
             <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">Login</h1>
 
             <form onSubmit={submit}>
@@ -117,7 +117,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex h-12 w-full items-center justify-center rounded-full bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors disabled:opacity-60"
+                    className="btn-gradient flex h-12 w-full items-center justify-center rounded-full font-medium disabled:opacity-60"
                   >
                     {loading ? "Вход..." : "Login"}
                   </button>
@@ -125,7 +125,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => router.push("/")}
-                    className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] dark:border-white/[.145] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]"
+                    className="btn-ghost flex h-12 w-full items-center justify-center rounded-full px-5"
                   >
                     Назад
                   </button>

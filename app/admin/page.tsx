@@ -526,17 +526,17 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="page-shell min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/[.145] border-t-white"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
+    <div className="page-shell min-h-screen font-sans p-4 sm:p-6">
       {/* Header */}
-      <div className="border-b border-black/[.08] dark:border-white/[.08] bg-white dark:bg-black">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+      <div className="page-panel max-w-6xl mx-auto mb-4">
+        <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => router.push("/")}
             className="hover:opacity-80 transition-opacity shrink-0"
@@ -554,13 +554,13 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => router.push("/")}
-              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
+              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
             >
               На главную
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
+              className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
             >
               Выйти
             </button>
@@ -568,7 +568,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
+      <div className="page-panel max-w-6xl mx-auto">
         {/* Page Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl font-semibold text-black dark:text-zinc-50 mb-2">
@@ -583,7 +583,7 @@ export default function AdminPage() {
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === "subjects"
                   ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-black dark:text-white"
               }`}
             >
               Предметы
@@ -593,7 +593,7 @@ export default function AdminPage() {
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === "users"
                   ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-black dark:text-white"
               }`}
             >
               Пользователи
@@ -603,7 +603,7 @@ export default function AdminPage() {
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === "analytics"
                   ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+                  : "border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-black dark:text-white"
               }`}
             >
               Аналитика
@@ -652,7 +652,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] text-sm disabled:opacity-50"
+                className="btn-gradient px-4 py-2 rounded-xl font-medium text-sm disabled:opacity-50"
               >
                 {loading ? "Создание..." : "Создать пользователя"}
               </button>
@@ -751,7 +751,7 @@ export default function AdminPage() {
               Управление предметами
             </label>
             <div className="flex gap-2 sm:gap-3 flex-wrap">
-              <label className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white cursor-pointer whitespace-nowrap">
+              <label className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-xs sm:text-sm text-black dark:text-white cursor-pointer whitespace-nowrap">
                 Импорт из файла
                 <input
                   type="file"
@@ -763,13 +763,13 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setShowImportText(!showImportText)}
-                className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
+                className="px-3 sm:px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-xs sm:text-sm text-black dark:text-white whitespace-nowrap"
               >
                 Импорт из текста
               </button>
               <button
                 onClick={() => setShowAddSubjectForm(!showAddSubjectForm)}
-                className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-xs sm:text-sm whitespace-nowrap"
+                className="btn-gradient px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm whitespace-nowrap"
               >
                 + Новый предмет
               </button>
@@ -795,14 +795,14 @@ export default function AdminPage() {
                   type="button"
                   onClick={handleImportFromText}
                   disabled={loading}
-                  className="px-3 py-1.5 rounded-lg bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] text-sm disabled:opacity-50"
+                  className="btn-gradient px-3 py-1.5 rounded-lg font-medium text-sm disabled:opacity-50"
                 >
                   Импортировать
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowImportText(false); setImportText(""); setImportTextError(""); }}
-                  className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-sm text-black dark:text-white"
+                  className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-sm text-black dark:text-white"
                 >
                   Отмена
                 </button>
@@ -854,7 +854,7 @@ export default function AdminPage() {
                   <button
                     onClick={handleCreateSubject}
                     disabled={loading || !newSubjectId.trim() || !newSubjectName.trim()}
-                    className="px-3 py-1.5 rounded-lg bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-sm disabled:opacity-50"
+                    className="btn-gradient px-3 py-1.5 rounded-lg font-medium text-sm disabled:opacity-50"
                   >
                     Создать
                   </button>
@@ -865,7 +865,7 @@ export default function AdminPage() {
                       setNewSubjectName("");
                       setNewSubjectDescription("");
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm text-black dark:text-white"
+                    className="px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-sm text-black dark:text-white"
                   >
                     Отмена
                   </button>
@@ -882,7 +882,7 @@ export default function AdminPage() {
                 className={`group relative px-3 sm:px-4 py-2 rounded-xl border border-solid transition-colors text-xs sm:text-sm ${
                   selectedSubject === subject.id
                     ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] text-black dark:text-white"
+                    : "border-black/[.08] dark:border-white/[.145] hover:bg-white/18 text-black dark:text-white"
                 }`}
               >
                 <button
@@ -1051,14 +1051,14 @@ export default function AdminPage() {
                           ? !newAnswer.trim()
                           : newAnswers.some((item) => !item.trim()))
                       }
-                      className="px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-gradient px-4 py-2 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? "Сохранение..." : "Сохранить"}
                     </button>
                     <button
                       onClick={handleCancel}
                       disabled={loading}
-                      className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-black dark:text-white disabled:opacity-50"
+                      className="px-4 py-2 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-black dark:text-white disabled:opacity-50"
                     >
                       Отмена
                     </button>
@@ -1080,7 +1080,7 @@ export default function AdminPage() {
                     setNewFieldsCount(2);
                     setNewAnswers(["", ""]);
                   }}
-                  className="px-3 sm:px-4 py-2 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors text-sm sm:text-base"
+                  className="btn-gradient px-3 sm:px-4 py-2 rounded-xl font-medium text-sm sm:text-base"
                 >
                   + Добавить вопрос
                 </button>
@@ -1114,7 +1114,7 @@ export default function AdminPage() {
                         <button
                           onClick={() => handleEdit(q)}
                           disabled={loading}
-                          className="px-2 sm:px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-xs sm:text-sm text-black dark:text-white disabled:opacity-50 whitespace-nowrap"
+                          className="px-2 sm:px-3 py-1.5 rounded-lg border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-xs sm:text-sm text-black dark:text-white disabled:opacity-50 whitespace-nowrap"
                         >
                           Изменить
                         </button>

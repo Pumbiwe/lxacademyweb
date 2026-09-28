@@ -153,8 +153,8 @@ function TrainContent() {
   // Режим "только ошибки": если нет сохранённых ошибок — показываем экран "нет ошибок"
   if (modeErrors && terms.length === 0 && !loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black sm:items-start">
+      <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+        <main className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
           <div className="w-full text-center sm:text-left">
             <button onClick={() => router.push("/")} className="hover:opacity-80 transition-opacity mb-6">
               <Image className="dark:invert" src="/next.svg" alt="Logo" width={80} height={16} priority />
@@ -165,7 +165,7 @@ function TrainContent() {
             </p>
             <button
               onClick={() => router.push("/")}
-              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] px-5 py-3 hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]"
+              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] px-5 py-3 hover:bg-white/18"
             >
               На главную
             </button>
@@ -261,8 +261,8 @@ function TrainContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+      <main className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
         <div className="w-full">
           <div className="flex justify-between items-center mb-6">
             <button
@@ -333,14 +333,14 @@ function TrainContent() {
           <div className="flex flex-col gap-3 mb-6">
             <button
               onClick={check}
-              className="w-full py-3 rounded-xl bg-black text-white font-medium hover:bg-[#383838] dark:bg-white dark:text-black dark:hover:bg-[#ccc] transition-colors"
+              className="btn-gradient w-full py-3 rounded-xl font-medium"
             >
               Проверить ответ
             </button>
             
             <button
               onClick={handleSkip}
-              className="w-full py-3 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:border-transparent hover:bg-black/[.04] dark:hover:bg-[#1a1a1a] transition-colors text-sm"
+              className="w-full py-3 rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] hover:bg-white/18 transition-colors text-sm"
             >
               Пропустить вопрос
             </button>
@@ -374,8 +374,8 @@ function TrainContent() {
 // Отдельные компоненты для экранов загрузки и завершения
 function LoadingScreen({ subjectName }: { subjectName: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <div className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+      <div className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
         <div className="text-center w-full">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] border-t-black dark:border-white/[.145] dark:border-t-white mx-auto mb-4"></div>
           <p className="text-lg text-zinc-600 dark:text-zinc-400">Загрузка вопросов...</p>
@@ -413,8 +413,8 @@ function CompletionScreen({ file, subjectName, router, errors, skipped }: { file
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+      <main className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
         <div className="w-full">
           <div className="mb-6">
             <button
@@ -505,14 +505,14 @@ function CompletionScreen({ file, subjectName, router, errors, skipped }: { file
           {errors.length > 0 && (
             <button
               onClick={handleTrainErrors}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-amber-600 text-white px-5 transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 sm:w-auto sm:min-w-[200px]"
+              className="btn-gradient-warm flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 sm:w-auto sm:min-w-[200px]"
             >
               Тренироваться по ошибкам
             </button>
           )}
           <button
             onClick={handleRestart}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] sm:w-auto sm:min-w-[140px]"
+            className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 sm:w-auto sm:min-w-[140px]"
           >
             Начать заново
           </button>
@@ -542,8 +542,8 @@ function getFileName(file: string) {
 export default function TrainPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        <div className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+      <div className="page-shell flex min-h-screen items-center justify-center p-4 sm:p-8 font-sans">
+        <div className="page-panel flex w-full max-w-3xl flex-col items-center sm:items-start">
           <div className="text-center w-full">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-black/[.08] border-t-black dark:border-white/[.145] dark:border-t-white mx-auto mb-4"></div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400">Загрузка...</p>
